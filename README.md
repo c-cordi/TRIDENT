@@ -22,7 +22,7 @@ Open Blender and go to **Edit → Preferences → Add-ons**, then click **Instal
 
 Once installed, TRIDENT will be available in Blender’s sidebar (Press "N" to pop the sidebar).
 
-For usage instructions and further tips, refer to the "Documentation" page.
+For usage instructions and further tips, refer to the "Wiki" page.
 
 ---
 
@@ -34,4 +34,4 @@ TRIDENT requires [Blender](https://www.blender.org/) version 4.0 or higher. All 
 
 ## 📜 License
 
-This project is distributed under the [MIT License](LICENSE).
+This project is distributed under the MIT License.
