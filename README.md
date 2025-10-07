@@ -32,6 +32,6 @@ TRIDENT requires [Blender](https://www.blender.org/) version 4.0 or higher. All 
 
 ---
 
-## 📜 License
+## License
 
-This project is distributed under the MIT License.
+This project is distributed under the GPL License.
