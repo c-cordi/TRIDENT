@@ -22,7 +22,7 @@ Open Blender and go to **Edit → Preferences → Add-ons**, then click **Instal
 
 Once installed, TRIDENT will be available in Blender’s sidebar (Press "N" to pop the sidebar).
 
-For usage instructions and further tips, refer to the [Wiki](https://github.com/CrowdObserver/TRIDENT/wiki) page.
+For usage instructions and further tips, refer to the [Wiki](https://github.com/c-cordi/TRIDENT/wiki) page.
 
 ---
 
