@@ -2,7 +2,7 @@ name: Build TRIDENT
 
 on:
   push:
-    branches: [ main ]
+    branches: [ legacy ]
   workflow_dispatch:
 
 jobs:
