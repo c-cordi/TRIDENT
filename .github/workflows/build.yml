@@ -74,20 +74,6 @@ jobs:
         find cpp/build -name "trident*.so" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .so files found"
         find cpp/build -name "trident*.dylib" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .dylib files found"
     
-    - name: Rename files with Python version suffix
-      shell: bash
-      run: |
-        cd trident_add-on/cpp_build
-        for file in trident.*; do
-          if [[ -f "$file" ]]; then
-            extension="${file##*.}"
-            base="${file%.*}"
-            new_name="${base}_py${{ matrix.python }}.${extension}"
-            mv "$file" "$new_name"
-            echo "Renamed $file to $new_name"
-          fi
-        done
-    
     - name: Debug - List output files (Windows)
       if: runner.os == 'Windows'
       run: |
@@ -104,29 +90,4 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: trident-${{ matrix.name }}
-        path: trident_add-on/cpp_build/trident_py${{ matrix.python }}.*
-
-  # Combine all artifacts into a single release
-  combine-artifacts:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
-        
-    - name: Combine artifacts
-      run: |
-        mkdir -p trident_add-on/cpp_build
-        find artifacts -name "trident_py*" -exec cp {} trident_add-on/cpp_build/ \;
-        echo "Combined files:"
-        ls -la trident_add-on/cpp_build/
-        
-    - name: Upload combined artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: trident-all-platforms
-        path: trident_add-on/cpp_build/
+        path: trident_add-on/cpp_build/trident*
