@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="\others\logo.png" alt="TRIDENT" width="300">
+  <img src=".github\others\logo.png" alt="TRIDENT" width="300">
 </p>
 
 # TRIDENT (Tri-Dimensional Embeddings Navigation Tool)
