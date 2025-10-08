@@ -72,36 +72,13 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
-    - name: Debug - Show all build output (Windows)
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        echo === Build directory contents ===
-        dir cpp\build\ /s /b 2>nul || echo Build directory not found
-        echo === trident_add-on directory contents ===
-        dir trident_add-on\ /b 2>nul || echo trident_add-on directory not found
-        echo === Looking for .pyd files anywhere ===
-        dir /s *.pyd 2>nul || echo No .pyd files found anywhere
-        echo === Looking for trident files anywhere ===
-        dir /s trident.* 2>nul || echo No trident files found
-        
-    - name: Debug - Show all build output (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        echo "=== Build directory contents ==="
-        find cpp/build -type f 2>/dev/null || echo "Build directory not found"
-        echo "=== trident_add-on directory contents ==="
-        ls -la trident_add-on/ 2>/dev/null || echo "trident_add-on directory not found"
-        echo "=== Looking for .so files anywhere ==="
-        find . -name "*.so" -type f 2>/dev/null || echo "No .so files found"
-    
     - name: Create cpp_build directory and copy files (Windows)
       if: runner.os == 'Windows'
       shell: cmd
       run: |
         if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
         echo Searching for and copying .pyd files...
-        for /r . %%f in (*.pyd) do if exist "%%f" (echo Found .pyd: %%f & copy "%%f" "trident_add-on\cpp_build\")
+        for /r trident_add-on %%f in (trident*.pyd) do if exist "%%f" (echo Found .pyd: %%f & copy "%%f" "trident_add-on\cpp_build\")
         echo Copying other trident files...
         if exist "trident_add-on\trident.dll" copy "trident_add-on\trident.dll" "trident_add-on\cpp_build\"
         if exist "trident_add-on\trident.lib" copy "trident_add-on\trident.lib" "trident_add-on\cpp_build\"
