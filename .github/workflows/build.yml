@@ -37,6 +37,21 @@ jobs:
         python -m pip install --upgrade pip
         pip install numpy pybind11
     
+    - name: Debug - List output files
+      run: |
+        echo "Contents of trident_add-on:"
+        ls -la trident_add-on/ || echo "trident_add-on directory not found"
+        echo "Contents of cpp directory:"
+        ls -la cpp/
+        echo "Contents of build directory:"
+        ls -la cpp/build/ || echo "build directory not found"
+        
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: trident-${{ matrix.name }}
+        path: trident_add-on/trident*
+
     - name: Build
       run: |
         cd cpp
