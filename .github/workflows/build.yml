@@ -10,15 +10,27 @@ jobs:
     strategy:
       matrix:
         include:
+          # Windows builds
           - os: windows-latest
             python: '3.10'
-            name: windows
+            name: windows-py310
+          - os: windows-latest
+            python: '3.11'
+            name: windows-py311
+          # macOS builds  
           - os: macos-latest  
             python: '3.10'
-            name: macos
+            name: macos-py310
+          - os: macos-latest  
+            python: '3.11'
+            name: macos-py311
+          # Linux builds
           - os: ubuntu-latest
             python: '3.10' 
-            name: linux
+            name: linux-py310
+          - os: ubuntu-latest
+            python: '3.11' 
+            name: linux-py311
 
     runs-on: ${{ matrix.os }}
     
@@ -45,28 +57,76 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
+    - name: Copy built files to add-on directory (Windows)
+      if: runner.os == 'Windows'
+      run: |
+        if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
+        copy cpp\build\Release\trident*.pyd trident_add-on\cpp_build\ 2>nul || echo "No .pyd files found"
+        copy cpp\build\Release\trident*.dll trident_add-on\cpp_build\ 2>nul || echo "No .dll files found"
+        copy cpp\build\Release\trident*.lib trident_add-on\cpp_build\ 2>nul || echo "No .lib files found"
+        copy cpp\build\Release\trident*.exp trident_add-on\cpp_build\ 2>nul || echo "No .exp files found"
+        copy cpp\build\Release\trident*.pdb trident_add-on\cpp_build\ 2>nul || echo "No .pdb files found"
+        
+    - name: Copy built files to add-on directory (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p trident_add-on/cpp_build
+        find cpp/build -name "trident*.so" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .so files found"
+        find cpp/build -name "trident*.dylib" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .dylib files found"
+    
+    - name: Rename files with Python version suffix
+      shell: bash
+      run: |
+        cd trident_add-on/cpp_build
+        for file in trident.*; do
+          if [[ -f "$file" ]]; then
+            extension="${file##*.}"
+            base="${file%.*}"
+            new_name="${base}_py${{ matrix.python }}.${extension}"
+            mv "$file" "$new_name"
+            echo "Renamed $file to $new_name"
+          fi
+        done
+    
     - name: Debug - List output files (Windows)
       if: runner.os == 'Windows'
       run: |
-        echo "Contents of trident_add-on:"
-        dir trident_add-on\ 2>nul || echo "trident_add-on directory not found"
-        echo "Contents of cpp directory:"
-        dir cpp\
-        echo "Contents of build directory:"
-        dir cpp\build\ 2>nul || echo "build directory not found"
+        echo "Contents of trident_add-on/cpp_build:"
+        dir trident_add-on\cpp_build\ 2>nul || echo "cpp_build directory not found"
         
     - name: Debug - List output files (Unix)
       if: runner.os != 'Windows'
       run: |
-        echo "Contents of trident_add-on:"
-        ls -la trident_add-on/ || echo "trident_add-on directory not found"
-        echo "Contents of cpp directory:"
-        ls -la cpp/
-        echo "Contents of build directory:"
-        ls -la cpp/build/ || echo "build directory not found"
+        echo "Contents of trident_add-on/cpp_build:"
+        ls -la trident_add-on/cpp_build/ || echo "cpp_build directory not found"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: trident-${{ matrix.name }}
-        path: trident_add-on/trident*
+        path: trident_add-on/cpp_build/trident_py${{ matrix.python }}.*
+
+  # Combine all artifacts into a single release
+  combine-artifacts:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+        
+    - name: Combine artifacts
+      run: |
+        mkdir -p trident_add-on/cpp_build
+        find artifacts -name "trident_py*" -exec cp {} trident_add-on/cpp_build/ \;
+        echo "Combined files:"
+        ls -la trident_add-on/cpp_build/
+        
+    - name: Upload combined artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: trident-all-platforms
+        path: trident_add-on/cpp_build/
