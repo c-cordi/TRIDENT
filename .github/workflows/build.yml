@@ -20,7 +20,7 @@ jobs:
             name: windows-py311
             arch: amd64
           # macOS Intel builds  
-          - os: macos-13  # Intel runner
+          - os: macos-13
             python: '3.10'
             name: macos-intel-py310
             arch: x86_64
@@ -29,7 +29,7 @@ jobs:
             name: macos-intel-py311
             arch: x86_64
           # macOS Apple Silicon builds
-          - os: macos-14  # Apple Silicon runner
+          - os: macos-14
             python: '3.10'
             name: macos-arm64-py310
             arch: arm64
@@ -72,12 +72,37 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
+    - name: Debug - Show all build output (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        echo === Build directory contents ===
+        dir cpp\build\ /s /b 2>nul || echo Build directory not found
+        echo === trident_add-on directory contents ===
+        dir trident_add-on\ /b 2>nul || echo trident_add-on directory not found
+        echo === Looking for .pyd files anywhere ===
+        dir /s *.pyd 2>nul || echo No .pyd files found anywhere
+        echo === Looking for trident files anywhere ===
+        dir /s trident.* 2>nul || echo No trident files found
+        
+    - name: Debug - Show all build output (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "=== Build directory contents ==="
+        find cpp/build -type f 2>/dev/null || echo "Build directory not found"
+        echo "=== trident_add-on directory contents ==="
+        ls -la trident_add-on/ 2>/dev/null || echo "trident_add-on directory not found"
+        echo "=== Looking for .so files anywhere ==="
+        find . -name "*.so" -type f 2>/dev/null || echo "No .so files found"
+    
     - name: Create cpp_build directory and copy files (Windows)
       if: runner.os == 'Windows'
       shell: cmd
       run: |
         if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
-        if exist "trident_add-on\trident.pyd" copy "trident_add-on\trident.pyd" "trident_add-on\cpp_build\"
+        echo Searching for and copying .pyd files...
+        for /r . %%f in (*.pyd) do if exist "%%f" (echo Found .pyd: %%f & copy "%%f" "trident_add-on\cpp_build\")
+        echo Copying other trident files...
         if exist "trident_add-on\trident.dll" copy "trident_add-on\trident.dll" "trident_add-on\cpp_build\"
         if exist "trident_add-on\trident.lib" copy "trident_add-on\trident.lib" "trident_add-on\cpp_build\"
         if exist "trident_add-on\trident.exp" copy "trident_add-on\trident.exp" "trident_add-on\cpp_build\"
@@ -87,23 +112,24 @@ jobs:
       if: runner.os != 'Windows'
       run: |
         mkdir -p trident_add-on/cpp_build
-        find trident_add-on -maxdepth 1 -name "trident*" -type f -exec cp {} trident_add-on/cpp_build/ \; 2>/dev/null || echo "No trident files found in trident_add-on"
+        echo "Searching for and copying .so files..."
+        find . -name "*.so" -type f -exec cp {} trident_add-on/cpp_build/ \; -exec echo "Copied: {}" \; 2>/dev/null || echo "No .so files found"
+        echo "Copying other trident files..."
+        find trident_add-on -maxdepth 1 -name "trident*" -type f -exec cp {} trident_add-on/cpp_build/ \; 2>/dev/null || echo "No additional trident files found"
     
-    - name: Debug - Show built files (Windows)
-      if: runner.os == 'Windows'
-      shell: cmd
+    - name: Final debug - Show cpp_build contents
+      shell: bash
       run: |
-        echo Built files for ${{ matrix.name }} (${{ matrix.arch }}):
-        dir trident_add-on\cpp_build\ 2>nul || echo No files found in cpp_build
-        
-    - name: Debug - Show built files (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        echo "Built files for ${{ matrix.name }} (${{ matrix.arch }}):"
-        find trident_add-on/cpp_build -type f 2>/dev/null || echo "No files found in cpp_build"
+        echo "=== Final cpp_build contents ==="
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
+          cmd //c "dir trident_add-on\\cpp_build\\ 2>nul || echo cpp_build is empty"
+        else
+          ls -la trident_add-on/cpp_build/ 2>/dev/null || echo "cpp_build is empty"
+        fi
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: trident-${{ matrix.name }}
         path: trident_add-on/cpp_build/
+      continue-on-error: true
