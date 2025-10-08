@@ -12,7 +12,7 @@
 
 To install TRIDENT, first download the release that matches your system and version of Blender from the link below:
 
-[Download TRIDENT here](https://github.com/CrowdObserver/TRIDENT/releases)
+[Download TRIDENT here](https://github.com/c-cordi/TRIDENT/releases)
 
 Open Blender and go to **Edit → Preferences → Add-ons**, then click **Install...**. Select the downloaded `.zip` file. After the add-on is installed, simply enable it by checking the box next to **TRIDENT** in the add-ons list.
 
@@ -22,13 +22,13 @@ Open Blender and go to **Edit → Preferences → Add-ons**, then click **Instal
 
 Once installed, TRIDENT will be available in Blender’s sidebar (Press "N" to pop the sidebar).
 
-For usage instructions and further tips, refer to the [Wiki](https://github.com/CrowdObserver/TRIDENT/wiki) page.
+For usage instructions and further tips, refer to the [Wiki](https://github.com/c-cordi/TRIDENT/wiki) page.
 
 ---
 
 ## Requirements
 
-TRIDENT requires [Blender](https://www.blender.org/) version 4.0 or higher. All necessary Python dependencies are bundled with the add-on, so no extra installation steps are needed.
+TRIDENT requires [Blender](https://www.blender.org/) version 4.2 or higher. All necessary Python dependencies are bundled with the add-on, so no extra installation steps are needed.
 
 ---
 
