@@ -14,23 +14,38 @@ jobs:
           - os: windows-latest
             python: '3.10'
             name: windows-py310
+            arch: amd64
           - os: windows-latest
             python: '3.11'
             name: windows-py311
-          # macOS builds  
-          - os: macos-latest  
+            arch: amd64
+          # macOS Intel builds  
+          - os: macos-13  # Intel runner
             python: '3.10'
-            name: macos-py310
-          - os: macos-latest  
+            name: macos-intel-py310
+            arch: x86_64
+          - os: macos-13
             python: '3.11'
-            name: macos-py311
+            name: macos-intel-py311
+            arch: x86_64
+          # macOS Apple Silicon builds
+          - os: macos-14  # Apple Silicon runner
+            python: '3.10'
+            name: macos-arm64-py310
+            arch: arm64
+          - os: macos-14
+            python: '3.11'
+            name: macos-arm64-py311
+            arch: arm64
           # Linux builds
           - os: ubuntu-latest
             python: '3.10' 
             name: linux-py310
+            arch: x86_64
           - os: ubuntu-latest
             python: '3.11' 
             name: linux-py311
+            arch: x86_64
 
     runs-on: ${{ matrix.os }}
     
@@ -57,23 +72,6 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
-    - name: Debug - List built files (Windows)
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        echo "Contents of cpp/build:"
-        dir cpp\build\ /s /b 2>nul || echo "Build directory not found"
-        echo "Contents of trident_add-on:"
-        dir trident_add-on\ /b 2>nul || echo "trident_add-on directory not found"
-        
-    - name: Debug - List built files (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        echo "Contents of cpp/build:"
-        find cpp/build -type f 2>/dev/null || echo "No files found in cpp/build"
-        echo "Contents of trident_add-on:"
-        ls -la trident_add-on/ 2>/dev/null || echo "trident_add-on directory not found"
-    
     - name: Create cpp_build directory and copy files (Windows)
       if: runner.os == 'Windows'
       shell: cmd
@@ -91,22 +89,13 @@ jobs:
         mkdir -p trident_add-on/cpp_build
         find trident_add-on -maxdepth 1 -name "trident*" -type f -exec cp {} trident_add-on/cpp_build/ \; 2>/dev/null || echo "No trident files found in trident_add-on"
     
-    - name: Final debug - List output files (Windows)
-      if: runner.os == 'Windows'
-      shell: cmd
+    - name: Debug - Show built files
       run: |
-        echo "Final contents of trident_add-on/cpp_build:"
-        dir trident_add-on\cpp_build\ 2>nul || echo "cpp_build directory is empty or not found"
-        
-    - name: Final debug - List output files (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        echo "Final contents of trident_add-on/cpp_build:"
-        ls -la trident_add-on/cpp_build/ 2>/dev/null || echo "cpp_build directory is empty or not found"
+        echo "Built files for ${{ matrix.name }} (${{ matrix.arch }}):"
+        find trident_add-on/cpp_build -type f 2>/dev/null || dir trident_add-on\cpp_build\ 2>nul || echo "No files found"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: trident-${{ matrix.name }}
         path: trident_add-on/cpp_build/
-      continue-on-error: true
