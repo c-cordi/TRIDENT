@@ -79,7 +79,11 @@ jobs:
       shell: cmd
       run: |
         if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
-        for /r trident_add-on %%f in (trident.*) do if exist "%%f" copy "%%f" trident_add-on\cpp_build\
+        if exist "trident_add-on\trident.pyd" copy "trident_add-on\trident.pyd" "trident_add-on\cpp_build\"
+        if exist "trident_add-on\trident.dll" copy "trident_add-on\trident.dll" "trident_add-on\cpp_build\"
+        if exist "trident_add-on\trident.lib" copy "trident_add-on\trident.lib" "trident_add-on\cpp_build\"
+        if exist "trident_add-on\trident.exp" copy "trident_add-on\trident.exp" "trident_add-on\cpp_build\"
+        if exist "trident_add-on\trident.pdb" copy "trident_add-on\trident.pdb" "trident_add-on\cpp_build\"
         
     - name: Create cpp_build directory and copy files (Unix)
       if: runner.os != 'Windows'
