@@ -89,10 +89,18 @@ jobs:
         mkdir -p trident_add-on/cpp_build
         find trident_add-on -maxdepth 1 -name "trident*" -type f -exec cp {} trident_add-on/cpp_build/ \; 2>/dev/null || echo "No trident files found in trident_add-on"
     
-    - name: Debug - Show built files
+    - name: Debug - Show built files (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        echo Built files for ${{ matrix.name }} (${{ matrix.arch }}):
+        dir trident_add-on\cpp_build\ 2>nul || echo No files found in cpp_build
+        
+    - name: Debug - Show built files (Unix)
+      if: runner.os != 'Windows'
       run: |
         echo "Built files for ${{ matrix.name }} (${{ matrix.arch }}):"
-        find trident_add-on/cpp_build -type f 2>/dev/null || dir trident_add-on\cpp_build\ 2>nul || echo "No files found"
+        find trident_add-on/cpp_build -type f 2>/dev/null || echo "No files found in cpp_build"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
