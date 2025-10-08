@@ -57,37 +57,53 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
-    - name: Copy built files to add-on directory (Windows)
+    - name: Debug - List built files (Windows)
       if: runner.os == 'Windows'
       run: |
-        if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
-        copy cpp\build\Release\trident*.pyd trident_add-on\cpp_build\ 2>nul || echo "No .pyd files found"
-        copy cpp\build\Release\trident*.dll trident_add-on\cpp_build\ 2>nul || echo "No .dll files found"
-        copy cpp\build\Release\trident*.lib trident_add-on\cpp_build\ 2>nul || echo "No .lib files found"
-        copy cpp\build\Release\trident*.exp trident_add-on\cpp_build\ 2>nul || echo "No .exp files found"
-        copy cpp\build\Release\trident*.pdb trident_add-on\cpp_build\ 2>nul || echo "No .pdb files found"
+        echo "Contents of cpp/build/Release:"
+        dir cpp\build\Release\ /b 2>nul || echo "Release directory not found"
+        echo "Contents of trident_add-on:"
+        dir trident_add-on\ /b 2>nul || echo "trident_add-on directory not found"
         
-    - name: Copy built files to add-on directory (Unix)
+    - name: Debug - List built files (Unix)
+      if: runner.os != 'Windows'
+      run: |
+        echo "Contents of cpp/build:"
+        find cpp/build -name "trident*" -type f 2>/dev/null || echo "No trident files found in cpp/build"
+        echo "Contents of trident_add-on:"
+        ls -la trident_add-on/ 2>/dev/null || echo "trident_add-on directory not found"
+    
+    - name: Create cpp_build directory and copy files (Windows)
+      if: runner.os == 'Windows'
+      shell: cmd
+      run: |
+        if not exist "trident_add-on\cpp_build" mkdir trident_add-on\cpp_build
+        if exist "trident_add-on\trident.pyd" copy trident_add-on\trident.pyd trident_add-on\cpp_build\
+        if exist "trident_add-on\trident.dll" copy trident_add-on\trident.dll trident_add-on\cpp_build\
+        if exist "trident_add-on\trident.lib" copy trident_add-on\trident.lib trident_add-on\cpp_build\
+        if exist "trident_add-on\trident.exp" copy trident_add-on\trident.exp trident_add-on\cpp_build\
+        if exist "trident_add-on\trident.pdb" copy trident_add-on\trident.pdb trident_add-on\cpp_build\
+        
+    - name: Create cpp_build directory and copy files (Unix)
       if: runner.os != 'Windows'
       run: |
         mkdir -p trident_add-on/cpp_build
-        find cpp/build -name "trident*.so" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .so files found"
-        find cpp/build -name "trident*.dylib" -exec cp {} trident_add-on/cpp_build/ \; || echo "No .dylib files found"
+        find trident_add-on -maxdepth 1 -name "trident*" -type f -exec cp {} trident_add-on/cpp_build/ \; 2>/dev/null || echo "No trident files found in trident_add-on"
     
-    - name: Debug - List output files (Windows)
+    - name: Final debug - List output files (Windows)
       if: runner.os == 'Windows'
       run: |
-        echo "Contents of trident_add-on/cpp_build:"
+        echo "Final contents of trident_add-on/cpp_build:"
         dir trident_add-on\cpp_build\ 2>nul || echo "cpp_build directory not found"
         
-    - name: Debug - List output files (Unix)
+    - name: Final debug - List output files (Unix)
       if: runner.os != 'Windows'
       run: |
-        echo "Contents of trident_add-on/cpp_build:"
-        ls -la trident_add-on/cpp_build/ || echo "cpp_build directory not found"
+        echo "Final contents of trident_add-on/cpp_build:"
+        ls -la trident_add-on/cpp_build/ 2>/dev/null || echo "cpp_build directory not found"
     
     - name: Upload artifacts
       uses: actions/upload-artifact@v4
       with:
         name: trident-${{ matrix.name }}
-        path: trident_add-on/cpp_build/trident*
+        path: trident_add-on/cpp_build/
