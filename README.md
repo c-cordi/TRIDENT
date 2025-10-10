@@ -14,7 +14,7 @@ To install TRIDENT, first download the release that matches your system and vers
 
 [Download TRIDENT here](https://github.com/c-cordi/TRIDENT/releases)
 
-Open Blender and go to **Edit → Preferences → Add-ons**, then click **Install...**. Select the downloaded `.zip` file. After the add-on is installed, simply enable it by checking the box next to **TRIDENT** in the add-ons list.
+Open Blender and go to **Edit → Preferences → Get Extensions**, then click **Install from disk...** from the menu on the top right arrow. Select the downloaded `.zip` file. After the add-on is installed, simply enable it by checking the box next to **TRIDENT** in the add-ons list.
 
 ---
 
