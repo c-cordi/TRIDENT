@@ -56,36 +56,16 @@ jobs:
         cmake ..
         cmake --build . --config Release
     
-    - name: Create bin directory and copy files (Windows)
-      if: runner.os == 'Windows'
-      shell: cmd
-      run: |
-        if not exist "trident_extension\bin" mkdir trident_extension\bin
-        echo Searching for and copying .pyd files...
-        for /r trident_extension %%f in (_trident*.pyd) do if exist "%%f" (echo Found .pyd: %%f & copy "%%f" "trident_extension\bin\")
-        echo Copying other _trident files...
-        if exist "trident_extension\_trident.dll" copy "trident_extension\_trident.dll" "trident_extension\bin\"
-        if exist "trident_extension\_trident.lib" copy "trident_extension\_trident.lib" "trident_extension\bin\"
-        if exist "trident_extension\_trident.exp" copy "trident_extension\_trident.exp" "trident_extension\bin\"
-        if exist "trident_extension\_trident.pdb" copy "trident_extension\_trident.pdb" "trident_extension\bin\"
-        
-    - name: Create bin directory and copy files (Unix)
-      if: runner.os != 'Windows'
-      run: |
-        mkdir -p trident_extension/bin
-        echo "Searching for and copying .so files..."
-        find . -name "_trident*.so" -type f -exec cp {} trident_extension/bin/ \; -exec echo "Copied: {}" \; 2>/dev/null || echo "No .so files found"
-        echo "Copying other _trident files..."
-        find trident_extension -maxdepth 1 -name "_trident*" -type f -exec cp {} trident_extension/bin/ \; 2>/dev/null || echo "No additional _trident files found"
-    
-    - name: Final debug - Show bin contents
+    - name: Verify build output
       shell: bash
       run: |
-        echo "=== Final bin contents ==="
+        echo "=== Build output verification ==="
         if [[ "${{ runner.os }}" == "Windows" ]]; then
-          cmd //c "dir trident_extension\\bin\\ 2>nul || echo bin is empty"
+          echo "Contents of trident_extension/bin:"
+          cmd //c "dir trident_extension\\bin\\ 2>nul || echo bin directory does not exist"
         else
-          ls -la trident_extension/bin/ 2>/dev/null || echo "bin is empty"
+          echo "Contents of trident_extension/bin:"
+          ls -la trident_extension/bin/ 2>/dev/null || echo "bin directory does not exist"
         fi
     
     - name: Upload artifacts
