@@ -6,6 +6,7 @@ import bpy
 try:
     from .bin import _trident
     cpp_loader = _trident.DataLoader()
+    trident_module = _trident
 except Exception as e:
     trident_module = None
     cpp_loader = None

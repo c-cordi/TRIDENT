@@ -284,7 +284,7 @@ public:
     }
 };
 
-PYBIND11_MODULE(trident, m) {
+PYBIND11_MODULE(_trident, m) {
     m.doc() = "TRIDENT core - High performance data processing";
 
     py::class_<TRIDENTDataLoader>(m, "DataLoader")
