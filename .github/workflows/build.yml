@@ -1,4 +1,4 @@
-name: Build TRIDENT
+name: Build TRIDENT (Main)
 
 on:
   push:
