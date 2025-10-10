@@ -6,7 +6,9 @@ name = "TRIDENT"
 tagline = "3D UMAP/t-SNE embeddings into Blender"
 maintainer = "Cristiano Cordì - cordi.cristiano@gmail.com"
 type = "add-on"
-license = ["GPL-3.0-or-later"]
+license = ["SPDX:GPL-3.0-or-later"]
+
+website = "https://github.com/c-cordi/TRIDENT"
 
 tags = ["3D View", "Visualization", "Data Analysis"]
 
