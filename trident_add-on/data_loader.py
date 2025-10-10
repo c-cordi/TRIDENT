@@ -1,19 +1,13 @@
-import sys
 import json
 import numpy as np
 import bpy
-from pathlib import Path
 
 # Import the C++ module
-_debug = Path(__file__).resolve().parent / "cpp_build"
-if str(_debug) not in sys.path:
-    sys.path.insert(0, str(_debug))
-
 try:
-    import trident
-    cpp_loader = trident.DataLoader()
+    from .bin import _trident
+    cpp_loader = _trident.DataLoader()
 except Exception as e:
-    trident = None
+    trident_module = None
     cpp_loader = None
     print("[TRIDENT] Could not import C++ module:", e)
 
@@ -25,7 +19,7 @@ def get_cpp_loader():
     return cpp_loader
 
 def get_trident_module():
-    return trident
+    return trident_module
 
 def get_data_cache():
     """Get data from scene storage with caching"""

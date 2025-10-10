@@ -1,0 +1,24 @@
+schema_version = "1.0.0"
+
+id = "trident"
+version = "0.1.1"
+name = "TRIDENT"
+tagline = "3D UMAP/t-SNE embeddings into Blender"
+maintainer = "Cristiano Cordì - cordi.cristiano@gmail.com"
+type = "add-on"
+license = ["GPL-3.0-or-later"]
+
+tags = ["3D View", "Visualization", "Data Analysis"]
+
+blender_version_min = "4.2.0"
+
+[permissions]
+files = "Read/write data files and build outputs"
+python = "Load native Python modules"
+
+[build]
+paths_exclude_pattern = [
+  "__pycache__/",
+  "*.pyc",
+  ".git/",
+]
