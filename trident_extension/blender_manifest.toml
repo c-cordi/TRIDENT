@@ -10,13 +10,12 @@ license = ["SPDX:GPL-3.0-or-later"]
 
 website = "https://github.com/c-cordi/TRIDENT"
 
-tags = ["3D View", "Visualization", "Data Analysis"]
+tags = ["3D View", "Object"]
 
 blender_version_min = "4.2.0"
 
 [permissions]
 files = "Read/write data files and build outputs"
-python = "Load native Python modules"
 
 [build]
 paths_exclude_pattern = [
