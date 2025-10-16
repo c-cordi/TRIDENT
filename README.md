@@ -4,9 +4,46 @@
 
 # TRIDENT (Tri-Dimensional Embeddings Navigation Tool)
 
-**TRIDENT** is a Blender add-on for generating 3D visualizations of dimensionality-reduced data such as UMAP, t-SNE, and PCA. It uses the EEVEE rendering engine for realtime navigation, category-based color labeling, and export of publication-grade images or animation frames.
+**TRIDENT** is a Blender add-on for generating 3D visualizations from dimensionality-reduced data such as UMAP, t-SNE, and PCA. It uses the EEVEE rendering engine for real-time navigation, category-based color labeling, and export of publication-grade images or animation frames.
 
 ---
+
+## Overview
+
+TRIDENT transforms Blender into a scientific visualization environment. You can import embeddings from CSV files, render them as point clouds, assign category labels, and capture high-quality figures or animations directly within Blender’s interface.
+
+---
+
+## Features
+
+### Data Import and Setup
+
+TRIDENT reads CSV files where each row represents a data point in reduced-dimensional space.
+
+Supports:
+
+- XYZ coordinates (UMAP, t-SNE, PCA, etc.)
+- Optional metadata columns for labels or grouping
+
+### Interactive 3D Exploration
+
+After import, TRIDENT plots your data directly in the Blender viewport using the **EEVEE** renderer.
+
+You can:
+
+- Navigate freely through data clusters
+- Toggle categories or classes on and off
+- Adjust transparency and palettes
+
+### Scientific Visualization in Blender
+
+TRIDENT turns Blender into a figure-generation tool.
+
+You can:
+
+- Export **publication-ready stills**
+- Render **camera flythroughs**
+- Reuse **lighting and material presets**
 
 ## Installation
 
@@ -29,6 +66,18 @@ For usage instructions and further tips, refer to the [Wiki](https://github.com/
 ## Requirements
 
 TRIDENT requires [Blender](https://www.blender.org/) version 4.2 or higher. All necessary Python dependencies are bundled with the add-on, so no extra installation steps are needed.
+
+---
+
+## Roadmap
+
+Planned additions:
+
+- Metadata inspection by clicking individual clusters
+- Adjust point size and shape
+- Custom legend formatting with palette control
+- Filtering and masking tools for focused analysis
+- Layout presets for multi-panel figure composition
 
 ---
 
