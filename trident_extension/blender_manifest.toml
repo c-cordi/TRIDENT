@@ -1,7 +1,7 @@
 schema_version = "1.0.0"
 
 id = "trident"
-version = "0.1.1"
+version = "0.1.2"
 name = "TRIDENT"
 tagline = "3D UMAP/t-SNE embeddings into Blender"
 maintainer = "Cristiano Cordì - cordi.cristiano@gmail.com"
