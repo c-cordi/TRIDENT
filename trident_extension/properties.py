@@ -7,8 +7,9 @@ def get_color_label_items(self, context):
     """Dynamic enum items based on loaded labels"""
     items = [('NONE', 'None', 'No color attribute')]
     
-    # Get labels from the loaded data
-    for item in context.scene.trident_labels:
+    # Access through the property group
+    trident = context.scene.trident
+    for item in trident.labels:
         if item.name:
             items.append((item.name, item.name, f"Color by {item.name}"))
     
@@ -26,107 +27,152 @@ def get_palette_items(self, context):
         return items
     except Exception as e:
         print(f"[TRIDENT] Error loading palettes: {e}")
+        return [('Viridis', 'Viridis', 'Default palette')]
 
-def register_properties():
-    bpy.utils.register_class(TRIDENT_LabelItem)
-
-    bpy.types.Scene.trident_filepath_data = bpy.props.StringProperty(
-        name="obsm File Path",
+class TRIDENT_Properties(bpy.types.PropertyGroup):
+    """Main TRIDENT property group - consolidates all scene properties"""
+    
+    # File paths
+    filepath_data: bpy.props.StringProperty(name="obsm File Path",
         description="Path to the obsm CSV file",
         default="",
         subtype='FILE_PATH'
     )
-    bpy.types.Scene.trident_filepath_obs = bpy.props.StringProperty(
+    
+    filepath_obs: bpy.props.StringProperty(
         name="obs File Path", 
         description="Path to the obs CSV file",
         default="",
         subtype='FILE_PATH'
     )
-
-    bpy.types.Scene.trident_color_label = bpy.props.EnumProperty(
+    
+    # Label collections
+    all_labels: bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
+    labels: bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
+    labels_index: bpy.props.IntProperty(default=0)
+    excluded_labels: bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
+    excluded_labels_index: bpy.props.IntProperty(default=0)
+    
+    # Color settings
+    color_label: bpy.props.EnumProperty(
         name="Color Label",
         description="Label to use for coloring points",
         items=get_color_label_items
     )
-
-    bpy.types.Scene.trident_color_palette = bpy.props.EnumProperty(
+    
+    color_palette: bpy.props.EnumProperty(
         name="Color Palette",
         description="Color palette to use for visualization",
         items=get_palette_items
     )
-
-    bpy.types.Scene.trident_all_labels = bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
-    bpy.types.Scene.trident_labels = bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
-    bpy.types.Scene.trident_labels_index = bpy.props.IntProperty(default=0)
-    bpy.types.Scene.trident_excluded_labels = bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
-    bpy.types.Scene.trident_excluded_labels_index = bpy.props.IntProperty(default=0)
-    bpy.types.Scene.trident_environment_transparent = bpy.props.BoolProperty(default=False)
-
-    bpy.types.Scene.trident_data_loaded = bpy.props.BoolProperty(
+    
+    # Environment
+    environment_transparent: bpy.props.BoolProperty(default=False)
+    
+    # Data storage
+    data_loaded: bpy.props.BoolProperty(
         name="Data Loaded",
         description="Whether TRIDENT data has been loaded",
         default=False
     )
     
-    # Store data as a flattened string
-    bpy.types.Scene.trident_data_serialized = bpy.props.StringProperty(
+    data_serialized: bpy.props.StringProperty(
         name="Serialized Data",
         description="Serialized numpy array data",
         default=""
     )
     
-    # Store data shape for reconstruction
-    bpy.types.Scene.trident_data_shape = bpy.props.IntVectorProperty(
+    data_shape: bpy.props.IntVectorProperty(
         name="Data Shape",
         description="Shape of the data array",
         size=2,
         default=(0, 0)
     )
     
-    # Store obs mapping as JSON string
-    bpy.types.Scene.trident_obs_map_json = bpy.props.StringProperty(
+    obs_map_json: bpy.props.StringProperty(
         name="Obs Map JSON",
         description="Serialized obs mapping",
         default=""
     )
-
-    # Store category mapping as JSON string
-    bpy.types.Scene.trident_cat_map_json = bpy.props.StringProperty(
+    
+    cat_map_json: bpy.props.StringProperty(
         name="Category Map JSON",
         description="Serialized category mapping",
         default=""
     )
-
-    bpy.types.Scene.trident_legend_title = bpy.props.StringProperty(
-    name="Legend Title",
-    description="Title for the legend",
-    default="TRIDENT Visualization"
+    
+    # Legend settings
+    legend_title: bpy.props.StringProperty(
+        name="Legend Title",
+        description="Title for the legend",
+        default="TRIDENT Visualization"
+    )
+    
+    current_color_label: bpy.props.StringProperty(
+        name="Current Color Label",
+        description="Currently selected color label name",
+        default=""
+    )
+    
+    # Object references
+    instance_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Instance Object",
+        description="Reference to TRIDENT_Instance object"
+    )
+    
+    points_obj: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Points Object", 
+        description="Reference to TRIDENT_Points object"
+    )
+    
+    sun: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Sun Light",
+        description="Reference to Sun light object"
+    )
+    
+    plane_floor: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Floor Plane",
+        description="Reference to floor plane"
+    )
+    
+    plane_back: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Back Plane",
+        description="Reference to back plane (Plane.001)"
+    )
+    
+    plane_side: bpy.props.PointerProperty(
+        type=bpy.types.Object,
+        name="Side Plane",
+        description="Reference to side plane (Plane.002)"
+    )
+    
+    shadow_material: bpy.props.PointerProperty(
+        type=bpy.types.Material,
+        name="Shadow Catcher Material",
+        description="Reference to shadow catcher material"
+    )
+    
+    legend_title_material: bpy.props.PointerProperty(
+        type=bpy.types.Material,
+        name="Legend Title Material",
+        description="Reference to legend title material"
     )
 
-    bpy.types.Scene.trident_current_color_label = bpy.props.StringProperty(
-    name="Current Color Label",
-    description="Currently selected color label name",
-    default=""
-    )
+def register_properties():
+    bpy.utils.register_class(TRIDENT_LabelItem)
+    bpy.utils.register_class(TRIDENT_Properties)
+    
+    # Register the single property group on Scene
+    bpy.types.Scene.trident = bpy.props.PointerProperty(type=TRIDENT_Properties)
 
 def unregister_properties():
+    # Unregister the single property
+    del bpy.types.Scene.trident
+    
+    bpy.utils.unregister_class(TRIDENT_Properties)
     bpy.utils.unregister_class(TRIDENT_LabelItem)
-
-    del bpy.types.Scene.trident_filepath_data
-    del bpy.types.Scene.trident_filepath_obs
-    del bpy.types.Scene.trident_all_labels
-    del bpy.types.Scene.trident_labels
-    del bpy.types.Scene.trident_labels_index
-    del bpy.types.Scene.trident_excluded_labels
-    del bpy.types.Scene.trident_excluded_labels_index
-    del bpy.types.Scene.trident_color_label
-    del bpy.types.Scene.trident_color_palette
-    del bpy.types.Scene.trident_legend_title
-    del bpy.types.Scene.trident_current_color_label
-
-    # Recovery
-    del bpy.types.Scene.trident_data_loaded
-    del bpy.types.Scene.trident_data_serialized
-    del bpy.types.Scene.trident_data_shape
-    del bpy.types.Scene.trident_obs_map_json
-    del bpy.types.Scene.trident_cat_map_json

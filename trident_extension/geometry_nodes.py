@@ -299,7 +299,7 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
     n_obj.inputs['Object'].default_value = inst_obj
 
     # Configure Named Attribute node
-    n_attr.inputs[0].default_value = context.scene.trident_labels[0].name if context.scene.trident_labels else "label"
+    n_attr.inputs[0].default_value = context.scene.trident.labels[0].name if context.scene.trident.labels else "label"
     n_attr.data_type = 'INT'
 
     # Configure Map Range node

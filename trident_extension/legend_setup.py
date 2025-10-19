@@ -1,18 +1,18 @@
 import bpy
-import bmesh
 from . import data_loader, geometry_nodes
 
 def create_square_legend(context):
     """Create square format legend scene with overlay compositing"""
     import numpy as np
-    color_label = getattr(bpy.data.scenes["Scene"], 'trident_current_color_label', '')
+    trident = context.scene.trident
+    color_label = trident.current_color_label
     
     if not color_label:
         print("[TRIDENT] No color label selected.")
     
-    if data_loader.get_data_type(bpy.data.scenes["Scene"]) == True:
-        trident_data_cache = data_loader.get_data_cache()
-        trident_label_cache = data_loader.get_label_cache()
+    if data_loader.get_data_type(context.scene) == True:
+        trident_data_cache = data_loader.get_data_cache(scene=context.scene)
+        trident_label_cache = data_loader.get_label_cache(scene=context.scene)
         color_index = trident_label_cache.index(color_label)
         column_data = trident_data_cache[:, 3 + color_index]
         unique_values = len(sorted(set(column_data[~np.isnan(column_data)])))
@@ -53,17 +53,21 @@ def create_legend_scene(context, format_type="square"):
         legend_scene.render.resolution_x = 1080
         legend_scene.render.resolution_y = 1080
 
-        main_scene.objects.get("Camera").data.lens = 50
-        main_scene.objects.get("Camera").location = (-32.412, 31.3021, 9.39782)
+        camera = main_scene.camera
+        if camera:
+            camera.data.lens = 50
+            camera.location = (-32.412, 31.3021, 9.39782)
     else:
         main_scene.render.resolution_x = 1920
         main_scene.render.resolution_y = 1080
         legend_scene.render.resolution_x = 1920
         legend_scene.render.resolution_y = 1080
 
-        main_scene.objects.get("Camera").data.lens = 31
-        main_scene.objects.get("Camera").location = (-39.9231, 24.1237, 9.39782)
-    
+        camera = main_scene.camera
+        if camera:
+            camera.data.lens = 31
+            camera.location = (-39.9231, 24.1237, 9.39782)
+
     # Enable transparent background for legend scene
     legend_scene.render.film_transparent = True
     
@@ -92,17 +96,18 @@ def create_legend_content(context, legend_scene, main_scene, format_type):
     with context.temp_override(scene=legend_scene):
         
         # Get legend title from main scene
-        title = getattr(main_scene, 'trident_legend_title', 'TRIDENT Visualization')
+        trident = main_scene.trident
+        title = trident.legend_title or 'TRIDENT Visualization'
         
         # Create title text
         create_title_text(context, title, format_type)
         
         # Get current color label from stored string property
-        color_label = getattr(main_scene, 'trident_current_color_label', '')
+        color_label = trident.current_color_label
         
         # Fallback to label cache if no stored label
         if not color_label:
-            trident_label_cache = data_loader.get_label_cache()
+            trident_label_cache = data_loader.get_label_cache(scene=main_scene)
             if trident_label_cache:
                 color_label = trident_label_cache[0]
             else:
@@ -113,7 +118,7 @@ def create_legend_content(context, legend_scene, main_scene, format_type):
             data_type = data_loader.get_data_type(main_scene)
             
             if data_type:  # Categorical
-                create_categorical_legend(context, main_scene, color_label, format_type)
+                create_categorical_legend(context, main_scene, legend_scene, color_label, format_type)
             else:  # Continuous
                 create_continuous_legend(context, main_scene, format_type)
 
@@ -134,10 +139,14 @@ def create_title_text(context, title, format_type):
     title_obj.data.align_y = 'CENTER'
     title_obj.data.size = 0.7 if format_type == "square" else 0.5
     
-    # Create material for text
-    mat = bpy.data.materials.new(name="Legend_Title_Material")
-    mat.use_nodes = True
-    mat.node_tree.nodes.clear()
+    # Create or get stored material reference
+    scene = context.scene
+    mat = scene.trident.legend_title_material
+    if not mat or mat.name not in bpy.data.materials:
+        mat = bpy.data.materials.new(name="Legend_Title_Material")
+        scene.trident.legend_title_material = mat
+        mat.use_nodes = True
+        mat.node_tree.nodes.clear()
     
     # Simple emission material for text
     nodes = mat.node_tree.nodes
@@ -152,14 +161,16 @@ def create_title_text(context, title, format_type):
     
     title_obj.data.materials.append(mat)
 
-def create_categorical_legend(context, main_scene, color_label, format_type):
+def create_categorical_legend(context, main_scene, legend_scene, color_label, format_type):
     """Create categorical legend with labeled spheres"""
     import numpy as np
     import json
     
     # Get categorical mappings from scene storage
-    cat_map_json = getattr(main_scene, 'trident_cat_map_json', '{}')
-    if not cat_map_json:
+    trident = main_scene.trident
+    cat_map_json = trident.cat_map_json or '{}'
+
+    if not cat_map_json or cat_map_json == '{}':
         print(f"[TRIDENT] Warning: No categorical mappings found")
         return
     
@@ -181,9 +192,9 @@ def create_categorical_legend(context, main_scene, color_label, format_type):
     label_categories = cat_maps[color_label] 
     
     # Get unique categories from the data
-    trident_data_cache = data_loader.get_data_cache()
-    trident_label_cache = data_loader.get_label_cache()
-    
+    trident_data_cache = data_loader.get_data_cache(scene=main_scene)
+    trident_label_cache = data_loader.get_label_cache(scene=main_scene)
+
     if trident_data_cache is None or not trident_label_cache:
         print(f"[TRIDENT] Warning: No data cache or label cache available")
         return
@@ -230,9 +241,9 @@ def create_categorical_legend(context, main_scene, color_label, format_type):
     sun.data.energy = 4.7
     sun.data.specular_factor = 0.0
 
-    # Get material from main scene TRIDENT_Instance
-    main_instance = bpy.data.objects.get("TRIDENT_Instance")
-    if main_instance and main_instance.data.materials:
+    # Get material from stored reference instead of name lookup
+    main_instance = main_scene.trident.instance_obj
+    if main_instance and main_instance.name in bpy.data.objects and main_instance.data.materials:
         legend_sphere.data.materials.append(main_instance.data.materials[0])
     else:
         print(f"[TRIDENT] Warning: Could not find TRIDENT_Instance material")
@@ -249,8 +260,9 @@ def create_categorical_legend(context, main_scene, color_label, format_type):
     text_obj.data.align_y = 'CENTER'
     text_obj.data.size = 0.5 if format_type == "square" else 0.4
     
-    mat_title = bpy.data.materials.get("Legend_Title_Material")
-    text_obj.data.materials.append(mat_title)
+    mat_title = legend_scene.trident.legend_title_material
+    if mat_title and mat_title.name in bpy.data.materials:
+        text_obj.data.materials.append(mat_title)
 
     # Create legend entries for each unique value found in data
     for i, value_id in enumerate(unique_values):
@@ -437,7 +449,8 @@ def create_gradient_material(plane_obj, main_scene):
     """Create gradient material matching the main color ramp"""
     
     # Get the palette and create gradient material
-    palette_name = getattr(main_scene, 'trident_color_palette', 'Viridis')
+    trident = main_scene.trident
+    palette_name = trident.color_palette or 'Viridis'
     colors = geometry_nodes.get_palette_colors(palette_name)
     
     # Create material
@@ -495,13 +508,16 @@ def create_gradient_labels(context, main_scene, format_type):
     import numpy as np
     
     if format_type == "rectangle":
-        bpy.data.scenes["Scene"].objects["Camera"].location = (-36.7207, 27.2434, 9.39782)
+        camera = main_scene.camera
+        if camera:
+            camera.location = (-36.7207, 27.2434, 9.39782)
 
     # Get data range
-    trident_data_cache = data_loader.get_data_cache()
-    color_label = main_scene.trident_current_color_label
-    trident_label_cache = data_loader.get_label_cache()
-    
+    trident_data_cache = data_loader.get_data_cache(scene=main_scene)
+    trident = main_scene.trident
+    color_label = trident.current_color_label
+    trident_label_cache = data_loader.get_label_cache(scene=main_scene)
+
     if trident_data_cache is not None and color_label in trident_label_cache:
         color_index = trident_label_cache.index(color_label)
         column_data = trident_data_cache[:, 3 + color_index]

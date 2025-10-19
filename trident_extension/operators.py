@@ -15,7 +15,7 @@ class TRIDENT_OT_AddLabel(bpy.types.Operator):
     bl_label = "Add Label"
 
     def execute(self, context):
-        context.scene.trident_labels.add()
+        context.scene.trident.labels.add()
         return {'FINISHED'}
 
 class TRIDENT_OT_RemoveLabel(bpy.types.Operator):
@@ -24,7 +24,7 @@ class TRIDENT_OT_RemoveLabel(bpy.types.Operator):
     index: bpy.props.IntProperty()
 
     def execute(self, context):
-        labels = context.scene.trident_labels
+        labels = context.scene.trident.labels
         if 0 <= self.index < len(labels):
             labels.remove(self.index)
         return {'FINISHED'}
@@ -38,8 +38,8 @@ class TRIDENT_OT_ExcludeSingleLabel(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        selected_labels = scene.trident_labels
-        excluded_labels = scene.trident_excluded_labels
+        selected_labels = scene.trident.labels
+        excluded_labels = scene.trident.excluded_labels
         
         # Find and remove from included labels
         for i, item in enumerate(selected_labels):
@@ -65,8 +65,8 @@ class TRIDENT_OT_IncludeSingleLabel(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        selected_labels = scene.trident_labels
-        excluded_labels = scene.trident_excluded_labels
+        selected_labels = scene.trident.labels
+        excluded_labels = scene.trident.excluded_labels
         
         # Check if already included
         for item in selected_labels:
@@ -94,9 +94,9 @@ class TRIDENT_OT_IncludeAllLabels(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        all_labels = scene.trident_all_labels
-        selected_labels = scene.trident_labels
-        excluded_labels = scene.trident_excluded_labels
+        all_labels = scene.trident.all_labels
+        selected_labels = scene.trident.labels
+        excluded_labels = scene.trident.excluded_labels
         
         # Clear both collections
         selected_labels.clear()
@@ -117,9 +117,9 @@ class TRIDENT_OT_ExcludeAllLabels(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        all_labels = scene.trident_all_labels
-        selected_labels = scene.trident_labels
-        excluded_labels = scene.trident_excluded_labels
+        all_labels = scene.trident.all_labels
+        selected_labels = scene.trident.labels
+        excluded_labels = scene.trident.excluded_labels
         
         # Clear both collections
         selected_labels.clear()
@@ -143,7 +143,7 @@ class TRIDENT_OT_LoadData(bpy.types.Operator):
             self.report({'ERROR'}, "C++ module not available")
             return {'CANCELLED'}
 
-        filepath_obs = context.scene.trident_filepath_obs
+        filepath_obs = context.scene.trident.filepath_obs
 
         if not filepath_obs:
             self.report({'ERROR'}, "Please specify obs file path")
@@ -162,16 +162,16 @@ class TRIDENT_OT_LoadData(bpy.types.Operator):
             scene = context.scene
         
             # Populate all_labels
-            scene.trident_all_labels.clear()
+            scene.trident.all_labels.clear()
             for header in headers:
-                item = scene.trident_all_labels.add()
+                item = scene.trident.all_labels.add()
                 item.name = header
             
             # Pre-select ALL labels (exclusion-based filtering)
-            scene.trident_labels.clear()
-            scene.trident_excluded_labels.clear()
+            scene.trident.labels.clear()
+            scene.trident.excluded_labels.clear()
             for header in headers:
-                item = scene.trident_labels.add()
+                item = scene.trident.labels.add()
                 item.name = header
             
             self.report({'INFO'}, f"Loaded {len(headers)} labels (all preselected)")
@@ -190,14 +190,14 @@ class TRIDENT_OT_PlotData(bpy.types.Operator):
         import numpy as np
 
         scene = context.scene
-        selected_labels = [item.name for item in scene.trident_labels if item.name]
+        selected_labels = [item.name for item in scene.trident.labels if item.name]
         
         if not selected_labels:
             self.report({'WARNING'}, "No labels selected for analysis")
             return {'CANCELLED'}
         
-        filepath_data = scene.trident_filepath_data
-        filepath_obs = scene.trident_filepath_obs
+        filepath_data = scene.trident.filepath_data
+        filepath_obs = scene.trident.filepath_obs
         
         if not filepath_data or not os.path.exists(filepath_data):
             self.report({'ERROR'}, "Invalid obsm file path")
@@ -207,22 +207,28 @@ class TRIDENT_OT_PlotData(bpy.types.Operator):
             self.report({'ERROR'}, "Invalid obs file path")
             return {'CANCELLED'}
 
-        # Load obsm data (coordinates)
+        # C++ HIGH-PERFORMANCE DATA LOADING
+
+        # Load spatial coordinates - typically 2D/3D position data
+        # Returns: (numpy array, category mappings, is_categorical flags)
         data_array, data_map, data_cat = cpp_loader.load_csv(filepath_data)
         
-        # Load obs data with only selected labels
+        # Load observation metadata (obs) with only user-selected labels
         obs_array, cat_map, obs_cat = cpp_loader.load_csv(filepath_obs, selected_labels)
+        
+        # Store categorical mappings: {label_name: {category_str: int_id}}
         cat_map = dict(zip(selected_labels, cat_map))
-        data_loader.set_cat_map(cat_map)
-        data_loader.set_obs_map(selected_labels, obs_cat)
+        data_loader.set_cat_map(cat_map, scene)
+        data_loader.set_obs_map(selected_labels, obs_cat, scene)
 
-        # Merge the data
+        # Merge coordinates + metadata horizontally (column-wise)
+        # Result shape: [n_points, 3 + n_labels] where first 3 cols are XYZ
         merged_array = cpp_loader.merge_data(data_array, obs_array)
         
-        # Cache the results
-        data_loader.set_data_cache(merged_array)
-        data_loader.set_label_cache(selected_labels)
-        
+        # Cache the results in Blender scene for visualization
+        data_loader.set_data_cache(merged_array, scene)
+        data_loader.set_label_cache(selected_labels, scene)
+
         self.report({'INFO'}, f"Loaded data with {len(selected_labels)} labels ({merged_array.shape[0]} points)")
 
         trident_data_cache = data_loader.get_data_cache()
@@ -243,18 +249,19 @@ class TRIDENT_OT_PlotData(bpy.types.Operator):
         coords = trident_data_cache[:, :3].astype(np.float32)
         n_points = coords.shape[0]
 
-        # Create the instanced object and hide it
-        inst_name = "TRIDENT_Instance"
-        inst_obj = bpy.data.objects.get(inst_name)
-        if inst_obj is None:
+        # Create the instanced object and store reference
+        inst_obj = scene.trident.instance_obj
+        if inst_obj is None or not inst_obj.name in bpy.data.objects:
             bpy.ops.mesh.primitive_ico_sphere_add(subdivisions=0, radius=0.05, location=(0, 0, 0))
             inst_obj = context.view_layer.objects.active
-            inst_obj.name = inst_name
+            inst_obj.name = "TRIDENT_Instance"
             
-            # Apply smooth shading to the instance object
+            # Store reference in scene
+            scene.trident.instance_obj = inst_obj
+            
             bpy.context.view_layer.objects.active = inst_obj
             bpy.ops.object.shade_smooth()
-            
+        
         inst_obj.hide_viewport = True
         inst_obj.hide_render = True
 
@@ -302,6 +309,9 @@ class TRIDENT_OT_PlotData(bpy.types.Operator):
 
         points_obj = bpy.data.objects.new("TRIDENT_Points", mesh)
         context.collection.objects.link(points_obj)
+        
+        # Store reference
+        scene.trident.points_obj = points_obj
 
         # Set correct origin for the geometry
         if bpy.context.mode != 'OBJECT':
@@ -323,7 +333,7 @@ class TRIDENT_OT_PlotData(bpy.types.Operator):
         # Store initial color label for legend use
         trident_label_cache = data_loader.get_label_cache()
         if trident_label_cache:
-            context.scene.trident_current_color_label = trident_label_cache[0]
+            context.scene.trident.current_color_label = trident_label_cache[0]
         
         bpy.context.space_data.shading.type = 'MATERIAL'
         # Set camera perspective
@@ -345,20 +355,20 @@ class TRIDENT_OT_UpdateColors(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        color_label = scene.trident_color_label
-        palette = getattr(scene, 'trident_color_palette', 'Viridis')
+        color_label = scene.trident.color_label
+        palette = scene.trident.color_palette
 
         try:
-            context.scene.trident_current_color_label = color_label
+            context.scene.trident.current_color_label = color_label
         except:
-            trident_label_cache = data_loader.get_label_cache()
+            trident_label_cache = data_loader.get_label_cache(scene=scene)
             if trident_label_cache:
-                context.scene.trident_current_color_label = trident_label_cache[0]
+                context.scene.trident.current_color_label = trident_label_cache[0]
             else:
-                context.scene.trident_current_color_label = ""
+                context.scene.trident.current_color_label = ""
         
-        trident_data_cache = data_loader.get_data_cache()
-        trident_label_cache = data_loader.get_label_cache()
+        trident_data_cache = data_loader.get_data_cache(scene)
+        trident_label_cache = data_loader.get_label_cache(scene)
         
         # Fix the NaN handling issue
         if not color_label or color_label == 'NONE':
@@ -390,16 +400,15 @@ class TRIDENT_OT_UpdateColors(bpy.types.Operator):
             return {'CANCELLED'}
 
         # Find the TRIDENT points object
-        points_obj = bpy.data.objects.get("TRIDENT_Points")
-        if not points_obj:
+        points_obj = scene.trident.points_obj
+        if not points_obj or points_obj.name not in bpy.data.objects:
             self.report({'ERROR'}, "TRIDENT_Points object not found. Plot data first.")
             return {'CANCELLED'}
         
-        # Find the instance object and update its material
-        inst_obj = bpy.data.objects.get("TRIDENT_Instance")
-        if inst_obj:
-            geometry_nodes.setup_instance_material(inst_obj, context.scene, max_label=max_color, palette_name=palette, points_obj=points_obj)
-            self.report({'INFO'}, f"Updated material palette to: {palette}")
+        # Use stored reference
+        inst_obj = scene.trident.instance_obj
+        if inst_obj and inst_obj.name in bpy.data.objects:
+            geometry_nodes.setup_instance_material(inst_obj, scene, max_label=max_color, palette_name=palette, points_obj=points_obj)
         else:
             self.report({'WARNING'}, "Instance object not found")
         
@@ -467,13 +476,13 @@ class TRIDENT_OT_ToggleTransparentEnvironment(bpy.types.Operator):
 
     def execute(self, context):
         scene = context.scene
-        if scene.trident_environment_transparent:
+        if scene.trident.environment_transparent:
             scene_environment.disable_transparent_environment()
-            scene.trident_environment_transparent = False
+            scene.trident.environment_transparent = False
             self.report({'INFO'}, "Disabled transparent environment")
         else:
             scene_environment.set_transparent_environment()
-            scene.trident_environment_transparent = True
+            scene.trident.environment_transparent = True
             self.report({'INFO'}, "Enabled transparent environment")
 
         return {'FINISHED'}

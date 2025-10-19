@@ -22,11 +22,11 @@ class TRIDENT_PT_DataInput(TRIDENT_PT_Base, bpy.types.Panel):
 
         # File path input for obsm
         layout.label(text="adata.obsm:")
-        layout.prop(scene, "trident_filepath_data", text="")
+        layout.prop(scene.trident, "filepath_data", text="")  # Changed: scene.trident.filepath_data
 
         # File path input for obs
         layout.label(text="adata.obs:")
-        layout.prop(scene, "trident_filepath_obs", text="")
+        layout.prop(scene.trident, "filepath_obs", text="")  # Changed: scene.trident.filepath_obs
 
         # Load headers only
         row = layout.row()
@@ -71,14 +71,14 @@ class TRIDENT_PT_Labels(TRIDENT_PT_Base, bpy.types.Panel):
         scene = context.scene
 
         # Show all loaded labels automatically
-        all_labels = getattr(scene, 'trident_all_labels', [])
+        all_labels = scene.trident.all_labels  # Changed: use PropertyGroup
         
         if not all_labels:
             layout.label(text="No headers loaded", icon='INFO')
             layout.label(text="Load CSV headers first")
         else:
             # Get included/excluded counts
-            included_labels = [item.name for item in scene.trident_labels if item.name]
+            included_labels = [item.name for item in scene.trident.labels if item.name]
             excluded_count = len(all_labels) - len(included_labels)
             
             # Header with counts
@@ -99,8 +99,8 @@ class TRIDENT_PT_Labels(TRIDENT_PT_Base, bpy.types.Panel):
                 # Use template_list for scrollable interface
                 box.template_list(
                     "TRIDENT_UL_IncludedLabelsList", "",  
-                    scene, "trident_labels",              
-                    scene, "trident_labels_index",
+                    scene.trident, "labels",  # Changed: scene.trident (object), "labels" (property name)
+                    scene.trident, "labels_index",  # Changed
                     rows=5,
                     maxrows=5
                 )
@@ -119,8 +119,8 @@ class TRIDENT_PT_Labels(TRIDENT_PT_Base, bpy.types.Panel):
                 # Use template_list for scrollable interface
                 box.template_list(
                     "TRIDENT_UL_ExcludedLabelsList", "",
-                    scene, "trident_excluded_labels",
-                    scene, "trident_excluded_labels_index",
+                    scene.trident, "excluded_labels",  # Changed
+                    scene.trident, "excluded_labels_index",  # Changed
                     rows=3,
                     maxrows=3
                 )
@@ -139,7 +139,7 @@ class TRIDENT_PT_Visualization(TRIDENT_PT_Base, bpy.types.Panel):
         scene = context.scene
 
         # Check if data exists
-        data_loaded = getattr(scene, 'trident_data_loaded', False)
+        data_loaded = scene.trident.data_loaded  # Changed
         
         if not data_loaded:
             layout.label(text="No filtered data", icon='INFO')
@@ -147,18 +147,18 @@ class TRIDENT_PT_Visualization(TRIDENT_PT_Base, bpy.types.Panel):
             return
 
         # Check if data is plotted
-        points_obj = bpy.data.objects.get("TRIDENT_Points")
-        if not points_obj:
+        points_obj = scene.trident.points_obj  # Changed: use stored reference
+        if not points_obj or points_obj.name not in bpy.data.objects:
             return
 
         # Show controls without loading data
         layout.label(text="Color Configuration:")
         row = layout.row()
-        row.prop(scene, "trident_color_label", text="Attribute")
+        row.prop(scene.trident, "color_label", text="Attribute")  # Changed
         
         layout.label(text="Palette:")
         row = layout.row()
-        row.prop(scene, "trident_color_palette", text="")
+        row.prop(scene.trident, "color_palette", text="")  # Changed
         
         row = layout.row()
         row.operator("trident.update_colors", text="Update Colors", icon='COLOR')
@@ -172,7 +172,7 @@ class TRIDENT_PT_Visualization(TRIDENT_PT_Base, bpy.types.Panel):
         layout.label(text="Legend:")
         
         # Title input for legend
-        layout.prop(scene, "trident_legend_title", text="Title")
+        layout.prop(scene.trident, "legend_title", text="Title")  # Changed
         
         # Legend format buttons
         row = layout.row()
@@ -198,7 +198,7 @@ class TRIDENT_PT_Error(bpy.types.Panel):
         layout = self.layout
         
         layout.label(text="C++ module not found", icon='ERROR')
-        layout.label(text="Build the module first:")
+        layout.label(text="Build the module first.")
 
 def register_panel():
     bpy.utils.register_class(TRIDENT_PT_DataInput)
