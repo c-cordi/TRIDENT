@@ -282,7 +282,7 @@ def create_categorical_legend(context, main_scene, legend_scene, color_label, fo
                 x_pos = 5
             else:
                 y_pos = start_y - (i * spacing)
-        elif max_color < 39:
+        elif max_color > 39:
             text_size = 0.3
             spacing = 0.5
             if i > 19 and i <= 39:
