@@ -1,5 +1,5 @@
 <p align="center">
-  <img src=".github\others\logo.png" alt="TRIDENT" width="300">
+  <img src=".github\others\logo.png" alt="TRIDENT">
 </p>
 
 # TRIDENT (Tri-Dimensional Embeddings Navigation Tool)
@@ -47,9 +47,13 @@ You can:
 
 ## Installation
 
-To install TRIDENT, first download the release that matches your system and version of Blender from the link below:
+To install TRIDENT, first download the release that matches your system directly from inside Blender from **Edit → Preferences → Get Extensions**, then search for **TRIDENT**. Or from the link below:
 
-[Download TRIDENT here](https://github.com/c-cordi/TRIDENT/releases)
+**Blender Extensions: [Download TRIDENT](https://github.com/c-cordi/TRIDENT/releases)**
+
+
+Alternatively, it can be downloaded from here following the instructions.
+Github Releases: [Download TRIDENT (Not Recommended)](https://github.com/c-cordi/TRIDENT/releases)
 
 Open Blender and go to **Edit → Preferences → Get Extensions**, then click **Install from disk...** from the menu on the top right arrow. Select the downloaded `.zip` file. After the add-on is installed, simply enable it by checking the box next to **TRIDENT** in the add-ons list.
 
