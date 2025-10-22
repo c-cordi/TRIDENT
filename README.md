@@ -49,7 +49,7 @@ You can:
 
 To install TRIDENT, first download the release that matches your system directly from inside Blender from **Edit → Preferences → Get Extensions**, then search for **TRIDENT**. Or from the link below:
 
-**Blender Extensions: [Download TRIDENT](https://github.com/c-cordi/TRIDENT/releases)**
+**Blender Extensions: [Download TRIDENT](https://extensions.blender.org/add-ons/trident/)**
 
 
 Alternatively, it can be downloaded from here following the instructions.
