@@ -36,7 +36,6 @@ static inline std::string strip_quotes(const std::string& s) {
     return s;
 }
 
-// Simple CSV field parser that handles quotes
 std::vector<std::string> parse_csv_line(const std::string& line) {
     std::vector<std::string> fields;
     std::string field;
@@ -72,12 +71,12 @@ public:
             throw std::runtime_error("CSV file is empty: " + filepath);
         }
 
-        // --- parse header and map them
+        // Parse the header first and map it
         std::vector<std::string> headers = parse_csv_line(line);
         std::unordered_map<std::string, size_t> header_map;
         for (size_t i = 0; i < headers.size(); ++i) header_map[headers[i]] = i;
 
-        // --- pick columns
+        // Pick columns based on selected labels
         std::vector<size_t> col_indices;
         if (!labels.empty()) {
             std::cout << "[DEBUG] Looking for labels: ";
@@ -106,13 +105,13 @@ public:
         std::cout << "\n";
         const size_t out_cols = col_indices.size();
 
-                // --- read all rows as strings
+        // Read all rows as strings
         std::vector<std::vector<std::string>> rows_str;
         while (std::getline(file, line)) {
             if (line.empty()) continue;
             auto cells = parse_csv_line(line);
             
-            // project to selected columns
+            // Project parsed fields to selected columns
             std::vector<std::string> proj(out_cols);
             for (size_t j = 0; j < out_cols; ++j) {
                 size_t col = col_indices[j];
@@ -125,7 +124,7 @@ public:
         }
         const size_t out_rows = rows_str.size();
 
-         // --- decide per-column: numeric vs categorical
+        // Decide per-column: numeric vs categorical
         std::vector<bool> is_categorical(out_cols, false);
         for (size_t j = 0; j < out_cols; ++j) {
             bool numeric = true;
@@ -145,44 +144,100 @@ public:
             is_categorical[j] = !numeric;
         }
 
-        // --- build mappings for categorical columns
+        // Build mappings for categorical columns and numeric columns (for potential categorical override)
         std::vector<std::unordered_map<std::string, int>> cat_maps(out_cols);
+        const int MAX_CATEGORICAL_VALUES = 1000;
+        
         for (size_t j = 0; j < out_cols; ++j) {
-            if (!is_categorical[j]) continue;
-            int next_id = 0;
             auto& cmap = cat_maps[j];
             
-            // Collect all non-empty values first
-            for (size_t i = 0; i < out_rows; ++i) {
-                const std::string& s = rows_str[i][j];
-                if (!s.empty() && cmap.find(s) == cmap.end()) {
-                    cmap[s] = next_id++;
+            if (is_categorical[j]) {
+                int next_id = 0;
+                
+                // Collect all non-empty values
+                for (size_t i = 0; i < out_rows; ++i) {
+                    const std::string& s = rows_str[i][j];
+                    if (!s.empty() && cmap.find(s) == cmap.end()) {
+                        cmap[s] = next_id++;
+                    }
                 }
-            }
-            
-            // Check if we actually have any empty values
-            bool has_missing = false;
-            for (size_t i = 0; i < out_rows; ++i) {
-                if (rows_str[i][j].empty()) {
-                    has_missing = true;
-                    break;
+                
+                // Check if there are any empty values
+                bool has_missing = false;
+                for (size_t i = 0; i < out_rows; ++i) {
+                    if (rows_str[i][j].empty()) {
+                        has_missing = true;
+                        break;
+                    }
                 }
-            }
-            
-            // Only add "nan" if there are missing values
-            if (has_missing) {
-                cmap["nan"] = next_id++;
+                
+                // Only add "nan" if there are missing values
+                if (has_missing) {
+                    cmap["nan"] = next_id++;
+                }
+            } else {
+                // Numeric column - create mapping for categorical override possibility
+                std::unordered_map<std::string, int> value_map;
+                int next_id = 0;
+                bool overflow = false;
+                
+                // Collect unique numeric values
+                for (size_t i = 0; i < out_rows; ++i) {
+                    const std::string& orig = rows_str[i][j];
+                    std::string s = strip_quotes(orig);
+                    
+                    if (s.empty()) continue;
+                    
+                    float tmp;
+                    if (parse_float(s, tmp)) {
+                        if (value_map.find(s) == value_map.end()) {
+                            if (next_id >= MAX_CATEGORICAL_VALUES) {
+                                overflow = true;
+                                break;
+                            }
+                            value_map[s] = next_id++;
+                        }
+                    }
+                }
+                
+                if (overflow) {
+                    std::cout << "[TRIDENT C++] Column " << j << " ('" << headers[col_indices[j]] 
+                              << "') has >" << MAX_CATEGORICAL_VALUES 
+                              << " unique values (threshold exceeded). Marking as overflow.\n";
+                    cmap.clear();
+                    cmap["Overflow"] = -1;
+                    cmap["Too Many"] = -2;
+                } else if (next_id > 0) {
+                    std::cout << "[TRIDENT C++] Column " << j << " ('" << headers[col_indices[j]] 
+                              << "') has " << next_id << " unique numeric values. Creating mapping for potential categorical override.\n";
+                    cmap = std::move(value_map);
+                    
+                    // Check for missing values
+                    bool has_missing = false;
+                    for (size_t i = 0; i < out_rows; ++i) {
+                        const std::string& orig = rows_str[i][j];
+                        std::string s = strip_quotes(orig);
+                        if (s.empty()) {
+                            has_missing = true;
+                            break;
+                        }
+                    }
+                    
+                    if (has_missing) {
+                        cmap["nan"] = next_id++;
+                    }
+                }
             }
         }
 
-        // --- allocate result array
+        // Allocate result array
         auto result = py::array_t<float>({out_rows, out_cols},
                                          {sizeof(float)*out_cols, sizeof(float)});
         auto buf = result.request();
         float* ptr = static_cast<float*>(buf.ptr);
         const float NaN = std::numeric_limits<float>::quiet_NaN();
 
-        // --- fill array
+        // Fill array
         for (size_t i = 0; i < out_rows; ++i) {
             for (size_t j = 0; j < out_cols; ++j) {
                 float v = NaN;
@@ -212,11 +267,17 @@ public:
             }
         }
 
-        // --- build Python-side mappings and flags
+        // Build Python-side mappings and flags
         py::list py_maps;
         for (size_t j = 0; j < out_cols; ++j) {
-            if (!is_categorical[j]) {
+            if (cat_maps[j].empty()) {
                 py_maps.append(py::none());
+            } else if (cat_maps[j].size() == 2 && 
+                       cat_maps[j].find("Overflow") != cat_maps[j].end() &&
+                       cat_maps[j].find("Too Many") != cat_maps[j].end()) {
+                py::dict d;
+                d[py::str("Overflow")] = py::str("Too Many");
+                py_maps.append(std::move(d));
             } else {
                 py::dict d;
                 for (const auto& kv : cat_maps[j]) {
@@ -236,7 +297,7 @@ public:
         return py::make_tuple(result, py_maps, py_is_cat);
     }
 
-    // Get data info
+    // Getter for shape
     std::tuple<size_t, size_t> get_shape(py::array_t<float> array) {
         auto buf = array.request();
         return std::make_tuple(buf.shape[0], buf.shape[1]);
