@@ -190,16 +190,20 @@ def get_data_type(scene=None):
             scene = bpy.context.scene
         
         obs_map = get_obs_map(scene)
+        treatment = scene.trident.label_treatment_override
         
         if not obs_map:
             return False
         
         trident = scene.trident
         color_label = trident.current_color_label or trident.color_label or ''
-        
-        if not color_label or color_label == 'NONE':
-            return False
-        
+
+        if treatment == 'AUTO':
+            if not color_label or color_label == 'NONE':
+                return False
+        else:
+            return (treatment == 'CATEGORICAL')
+
         return obs_map[color_label]
         
     except Exception as e:

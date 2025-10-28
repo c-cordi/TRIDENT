@@ -117,9 +117,9 @@ def create_legend_content(context, legend_scene, main_scene, format_type):
         if color_label and color_label != 'NONE':
             data_type = data_loader.get_data_type(main_scene)
             
-            if data_type:  # Categorical
+            if data_type:
                 create_categorical_legend(context, main_scene, legend_scene, color_label, format_type)
-            else:  # Continuous
+            else:
                 create_continuous_legend(context, main_scene, format_type)
 
 def create_title_text(context, title, format_type):

@@ -52,6 +52,23 @@ class TRIDENT_Properties(bpy.types.PropertyGroup):
     labels_index: bpy.props.IntProperty(default=0)
     excluded_labels: bpy.props.CollectionProperty(type=TRIDENT_LabelItem)
     excluded_labels_index: bpy.props.IntProperty(default=0)
+
+    show_treatment_override: bpy.props.BoolProperty(
+        name="Show Treatment Override",
+        description="Show/hide label treatment override options",
+        default=False
+    )
+    
+    label_treatment_override: bpy.props.EnumProperty(
+        name="Label Treatment Override",
+        description="Override automatic categorical/continuous detection",
+        items=[
+            ('AUTO', "Auto", "Use automatic detection based on data type"),
+            ('CATEGORICAL', "Categorical", "Force categorical treatment"),
+            ('CONTINUOUS', "Continuous", "Force continuous treatment")
+        ],
+        default='AUTO'
+    )
     
     # Color settings
     color_label: bpy.props.EnumProperty(
