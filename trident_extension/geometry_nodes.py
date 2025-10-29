@@ -284,19 +284,59 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
     nodes = tree.nodes
     links = tree.links
 
-    # Create all nodes with proper positioning
-    n_in     = nodes.new(type='NodeGroupInput'); n_in.location = (-600, 0)
-    n_out    = nodes.new(type='NodeGroupOutput'); n_out.location = ( 800, 0)
-    n_iop    = nodes.new(type='GeometryNodeInstanceOnPoints'); n_iop.location = (-200, 0)
-    n_obj    = nodes.new(type='GeometryNodeObjectInfo'); n_obj.location = (-400, -200)
-    n_attr   = nodes.new(type='GeometryNodeInputNamedAttribute'); n_attr.location = (-400, 200)
-    n_map    = nodes.new(type='ShaderNodeMapRange'); n_map.location = ( 100, 200)
-    n_store  = nodes.new(type='GeometryNodeStoreNamedAttribute'); n_store.location = ( 300, 0)
-    n_real   = nodes.new(type='GeometryNodeRealizeInstances'); n_real.location = ( 600, 0)
+    # Create all nodes with proper positioning (no overlap)
+    n_in      = nodes.new(type='NodeGroupInput');                  n_in.location      = (-1000,    0)
+    n_out     = nodes.new(type='NodeGroupOutput');                 n_out.location     = (1400,     0)
+    n_obj     = nodes.new(type='GeometryNodeObjectInfo');          n_obj.location     = (-600,   200)
+    n_attr    = nodes.new(type='GeometryNodeInputNamedAttribute'); n_attr.location    = (200,    400)
+    n_map     = nodes.new(type='ShaderNodeMapRange');              n_map.location     = (400,    400)
+    n_store   = nodes.new(type='GeometryNodeStoreNamedAttribute'); n_store.location   = (800,    400)
+    n_iop     = nodes.new(type='GeometryNodeInstanceOnPoints');    n_iop.location     = (600,    200)
+
+    n_obj_p   = nodes.new(type='GeometryNodeObjectInfo');          n_obj_p.location   = (-1000, -600)
+    n_bb_p    = nodes.new(type='GeometryNodeBoundBox');            n_bb_p.location    = (-800,  -200)
+    n_vm_sp   = nodes.new(type='ShaderNodeVectorMath');            n_vm_sp.location   = (-600,  -200)
+    n_abs_p   = nodes.new(type='ShaderNodeVectorMath');            n_abs_p.location   = (-400,  -200)
+    n_val     = nodes.new(type='ShaderNodeValue');                 n_val.location     = (-400,  -400)
+    n_vm_dp1  = nodes.new(type='ShaderNodeVectorMath');            n_vm_dp1.location  = (-200,  -200)
+    n_vm_dp2  = nodes.new(type='ShaderNodeVectorMath');            n_vm_dp2.location  = (   0,  -200)
+    n_vm_dp3  = nodes.new(type='ShaderNodeVectorMath');            n_vm_dp3.location  = ( 200,  -200)
+
+    n_bb_sc   = nodes.new(type='GeometryNodeBoundBox');            n_bb_sc.location   = (-800,  -600)
+    n_vm_ssc  = nodes.new(type='ShaderNodeVectorMath');            n_vm_ssc.location  = (-600,  -600)
+    n_abs_sc  = nodes.new(type='ShaderNodeVectorMath');            n_abs_sc.location  = (-400,  -600)
+    n_vm_dsc1 = nodes.new(type='ShaderNodeVectorMath');            n_vm_dsc1.location = (-200,  -600)
+    n_vm_dsc2 = nodes.new(type='ShaderNodeVectorMath');            n_vm_dsc2.location = (   0,  -600)
+    
+    n_real    = nodes.new(type='GeometryNodeRealizeInstances');    n_real.location    = (1000,   200)
+    n_trm     = nodes.new(type='GeometryNodeTransform');           n_trm.location     = (1200,   200)
 
     # Configure Object Info node
     n_obj.inputs['As Instance'].default_value = True
     n_obj.inputs['Object'].default_value = inst_obj
+
+    # Configure Object Info node for point scaling
+    n_obj_p.inputs['As Instance'].default_value = False
+    n_obj_p.inputs['Object'].default_value = inst_obj
+
+    # Configure Vector Math nodes for point scaling
+    n_vm_sp.operation = 'SUBTRACT'
+    n_abs_p.operation = 'ABSOLUTE'
+    n_val.outputs[0].default_value = context.scene.trident.point_size
+    n_vm_dp1.operation = 'DIVIDE'
+    n_vm_dp1.inputs[1].default_value = (0.2, 0.2, 0.2)
+    n_vm_dp2.operation = 'DIVIDE'
+    n_vm_dp2.inputs[0].default_value = (1.0, 1.0, 1.0)
+
+    # Configure Vector Math nodes for plot scaling
+    n_vm_ssc.operation = 'SUBTRACT'
+    n_abs_sc.operation = 'ABSOLUTE'
+    n_vm_dsc1.operation = 'DIVIDE'
+    n_vm_dsc1.inputs[1].default_value = (25, 25, 25)
+    n_vm_dsc2.operation = 'DIVIDE'
+    n_vm_dsc2.inputs[0].default_value = (1.0, 1.0, 1.0)
+
+    n_vm_dp3.operation = 'DIVIDE'
 
     # Configure Named Attribute node
     n_attr.inputs[0].default_value = context.scene.trident.labels[0].name if context.scene.trident.labels else "label"
@@ -316,11 +356,29 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
 
     # Create all the connections
     links.new(n_in.outputs["Geometry"], n_iop.inputs['Points'])           
-    links.new(n_obj.outputs['Geometry'], n_iop.inputs['Instance'])        
+    links.new(n_obj.outputs['Geometry'], n_iop.inputs['Instance'])
+    links.new(n_obj_p.outputs['Geometry'], n_bb_p.inputs['Geometry'])
+    links.new(n_bb_p.outputs['Min'], n_vm_sp.inputs[0])
+    links.new(n_bb_p.outputs['Max'], n_vm_sp.inputs[1])
+    links.new(n_vm_sp.outputs['Vector'], n_abs_p.inputs[0])
+    links.new(n_abs_p.outputs['Vector'], n_vm_dp1.inputs[0])
+    links.new(n_val.outputs['Value'], n_vm_dp1.inputs[1])
+    links.new(n_vm_dp1.outputs['Vector'], n_vm_dp2.inputs[1])
+    links.new(n_vm_dp2.outputs['Vector'], n_vm_dp3.inputs[0])
     links.new(n_iop.outputs['Instances'], n_store.inputs['Geometry'])
     links.new(n_attr.outputs['Attribute'], n_map.inputs['Value'])         
     links.new(n_map.outputs['Result'], n_store.inputs['Value'])
     links.new(n_store.outputs['Geometry'], n_real.inputs['Geometry'])
-    links.new(n_real.outputs['Geometry'], n_out.inputs["Geometry"])
+    links.new(n_real.outputs['Geometry'], n_trm.inputs["Geometry"])
+    links.new(n_in.outputs["Geometry"], n_bb_sc.inputs['Geometry'])
+    links.new(n_bb_sc.outputs['Min'], n_vm_ssc.inputs[0])
+    links.new(n_bb_sc.outputs['Max'], n_vm_ssc.inputs[1])
+    links.new(n_vm_ssc.outputs['Vector'], n_abs_sc.inputs[0])
+    links.new(n_abs_sc.outputs['Vector'], n_vm_dsc1.inputs[0])
+    links.new(n_vm_dsc1.outputs['Vector'], n_vm_dsc2.inputs[1])
+    links.new(n_vm_dsc2.outputs['Vector'], n_trm.inputs['Scale'])
+    links.new(n_vm_dsc2.outputs['Vector'], n_vm_dp3.inputs[1])
+    links.new(n_vm_dp3.outputs['Vector'], n_iop.inputs['Scale'])
+    links.new(n_trm.outputs["Geometry"], n_out.inputs["Geometry"])
 
     return mod

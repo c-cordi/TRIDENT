@@ -29,6 +29,27 @@ def get_palette_items(self, context):
         print(f"[TRIDENT] Error loading palettes: {e}")
         return [('Viridis', 'Viridis', 'Default palette')]
 
+def update_point_size(self, context):
+    points_obj = context.scene.trident.points_obj
+    if not points_obj or points_obj.name not in bpy.data.objects:
+        return
+    # Find the geometry nodes modifier
+    mod = points_obj.modifiers.get("InstancePoints")
+    if not mod or not mod.node_group:
+        return
+    # Find the Value node and update its value
+    for node in mod.node_group.nodes:
+        if node.bl_idname == 'ShaderNodeValue':
+            node.outputs[0].default_value = self.point_size / 10.0
+            break
+
+def update_title_size(self, context):
+    # Find the title text object in the legend scene(s)
+    for scene in bpy.data.scenes:
+        for obj in scene.objects:
+            if obj.type == 'FONT' and obj.name.startswith("Title"):
+                obj.data.size = self.title_size
+
 class TRIDENT_Properties(bpy.types.PropertyGroup):
     """Main TRIDENT property group - consolidates all scene properties"""
     
@@ -125,6 +146,15 @@ class TRIDENT_Properties(bpy.types.PropertyGroup):
         default="TRIDENT Visualization"
     )
     
+    title_size: bpy.props.FloatProperty(
+        name="Title Size",
+        description="Font size for the title",
+        default=0.8,
+        min=0.1,
+        max=2.0,
+        update=update_title_size
+    )
+
     current_color_label: bpy.props.StringProperty(
         name="Current Color Label",
         description="Currently selected color label name",
@@ -143,7 +173,16 @@ class TRIDENT_Properties(bpy.types.PropertyGroup):
         name="Points Object", 
         description="Reference to TRIDENT_Points object"
     )
-    
+
+    point_size: bpy.props.FloatProperty(
+        name="Point Size",
+        description="Size of the points in the visualization",
+        default=0.2,
+        min=0.001,
+        max=20.0,
+        update=update_point_size
+    )
+
     sun: bpy.props.PointerProperty(
         type=bpy.types.Object,
         name="Sun Light",

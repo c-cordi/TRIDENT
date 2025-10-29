@@ -200,15 +200,22 @@ class TRIDENT_PT_Visualization_Override(TRIDENT_PT_Base, bpy.types.Panel):
         row = col.row(align=True)
         row.prop(s.trident, "label_treatment_override", expand=True)
 
-class TRIDENT_PT_Legend_Configuration(TRIDENT_PT_Base, bpy.types.Panel):
-    bl_label = "Legend Configuration"
-    bl_idname = "TRIDENT_PT_legend_configuration"
+class TRIDENT_PT_Customization(TRIDENT_PT_Base, bpy.types.Panel):
+    bl_label = "Customization"
+    bl_idname = "TRIDENT_PT_customization"
     bl_parent_id = "TRIDENT_PT_visualization"
     bl_order = 2
 
     def draw(self, context):
         s = context.scene
         layout = self.layout
+
+        layout.use_property_split = True
+        layout.use_property_decorate = False
+
+        layout.label(text="Points:")
+        layout.prop(s.trident, "point_size", text="Size")
+        
         
         layout.label(text="Environment:")
         row = layout.row()
@@ -216,9 +223,8 @@ class TRIDENT_PT_Legend_Configuration(TRIDENT_PT_Base, bpy.types.Panel):
 
         layout.separator()
         layout.label(text="Legend:")
-        
-        # Title input for legend
         layout.prop(s.trident, "legend_title", text="Title")
+        layout.prop(s.trident, "title_size", text="Title Size")
 
         # Legend format buttons
         row = layout.row()
@@ -253,12 +259,12 @@ def register_panel():
     bpy.utils.register_class(TRIDENT_PT_Visualization)
     bpy.utils.register_class(TRIDENT_PT_Visualization_Override)
     bpy.utils.register_class(TRIDENT_PT_Color_Configuration)
-    bpy.utils.register_class(TRIDENT_PT_Legend_Configuration)
+    bpy.utils.register_class(TRIDENT_PT_Customization)
     bpy.utils.register_class(TRIDENT_PT_Error)
 
 def unregister_panel():
     bpy.utils.unregister_class(TRIDENT_PT_Error)
-    bpy.utils.unregister_class(TRIDENT_PT_Legend_Configuration)
+    bpy.utils.unregister_class(TRIDENT_PT_Customization)
     bpy.utils.unregister_class(TRIDENT_PT_Color_Configuration)
     bpy.utils.unregister_class(TRIDENT_PT_Visualization_Override)
     bpy.utils.unregister_class(TRIDENT_PT_Visualization)

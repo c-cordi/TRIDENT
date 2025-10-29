@@ -131,7 +131,7 @@ def create_title_text(context, title, format_type):
     else:
         bpy.ops.object.text_add(location=(-3, 5, 0))
     title_obj = context.active_object
-    title_obj.name = "Legend_Title"
+    title_obj.name = "Title"
     title_obj.data.body = title
     
     # Configure text properties
