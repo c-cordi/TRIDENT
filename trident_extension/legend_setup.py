@@ -259,7 +259,8 @@ def create_categorical_legend(context, main_scene, legend_scene, color_label, fo
     text_obj.data.align_x = 'CENTER'
     text_obj.data.align_y = 'CENTER'
     text_obj.data.size = 0.5 if format_type == "square" else 0.4
-    
+    title_obj = text_obj
+
     mat_title = legend_scene.trident.legend_title_material
     if mat_title and mat_title.name in bpy.data.materials:
         text_obj.data.materials.append(mat_title)
@@ -329,6 +330,33 @@ def create_categorical_legend(context, main_scene, legend_scene, color_label, fo
         # Create sphere with specific value AND max_color
         create_legend_sphere(context, legend_sphere, (x_pos, y_pos, 0), value_id, i, max_color)
     
+    title_x = title_obj.location.x
+
+    # Deselect all objects first
+    for obj in legend_scene.objects:
+        obj.select_set(False)
+
+    # Select all relevant objects
+    for obj in legend_scene.objects:
+        if obj.name.startswith("Legend_Point") or obj.name.startswith("Legend_Label"):
+            obj.select_set(True)
+
+    # Set the legend scene as active
+    active_scene = bpy.context.window.scene
+    bpy.context.window.scene = legend_scene
+
+    # Get max x dimension to center legend
+    x_max = max([obj.dimensions.x for obj in legend_scene.objects if obj.select_get()])
+
+    bpy.ops.transform.translate(
+        value=((2 - x_max/2, 0, 0)),
+        orient_type='GLOBAL'
+    )
+
+    bpy.context.window.scene = active_scene
+    for obj in legend_scene.objects:
+        obj.select_set(False)
+
     print(f"[TRIDENT] Created {len(unique_values)} legend entries")
 
 def create_legend_sphere(context, instance_sphere, location, value_id, index, max_color):
