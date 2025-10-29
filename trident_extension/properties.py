@@ -50,6 +50,20 @@ def update_title_size(self, context):
             if obj.type == 'FONT' and obj.name.startswith("Title"):
                 obj.data.size = self.title_size
 
+def update_gizmo_visibility(self, context):
+    obj = bpy.data.objects.get("TRIDENT_Gizmo")
+    text_x_obj = bpy.data.objects.get("TRIDENT_Gizmo_X_Text")
+    text_y_obj = bpy.data.objects.get("TRIDENT_Gizmo_Y_Text")
+    text_z_obj = bpy.data.objects.get("TRIDENT_Gizmo_Z_Text")
+    if obj:
+        obj.hide_render = not self.show_gizmo
+    if text_x_obj:
+        text_x_obj.hide_render = not self.show_gizmo
+    if text_y_obj:
+        text_y_obj.hide_render = not self.show_gizmo
+    if text_z_obj:
+        text_z_obj.hide_render = not self.show_gizmo
+
 class TRIDENT_Properties(bpy.types.PropertyGroup):
     """Main TRIDENT property group - consolidates all scene properties"""
     
@@ -146,6 +160,13 @@ class TRIDENT_Properties(bpy.types.PropertyGroup):
         default="TRIDENT Visualization"
     )
     
+    show_gizmo: bpy.props.BoolProperty(
+        name="Show Gizmo",
+        description="Show or hide the TRIDENT gizmo",
+        default=True,
+        update=update_gizmo_visibility
+    )
+
     title_size: bpy.props.FloatProperty(
         name="Title Size",
         description="Font size for the title",

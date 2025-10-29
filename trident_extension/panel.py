@@ -223,6 +223,7 @@ class TRIDENT_PT_Customization(TRIDENT_PT_Base, bpy.types.Panel):
 
         layout.separator()
         layout.label(text="Legend:")
+        layout.prop(s.trident, "show_gizmo", text="Show Gizmo", icon='GIZMO')
         layout.prop(s.trident, "legend_title", text="Title")
         layout.prop(s.trident, "title_size", text="Title Size")
 

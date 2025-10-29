@@ -78,6 +78,163 @@ def disable_transparent_environment():
     if sun and sun.name in bpy.data.objects:
         sun.data.energy = 4.7
 
+def create_gizmo(context):
+    scene = context.scene
+    points_obj = scene.trident.points_obj
+
+    # Clear scene first
+    for obj in context.scene.objects:
+        if "TRIDENT_Gizmo" in obj.name:
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+    # Z-Axis
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.1, depth=2, location=(0, 0, 1))
+    z_cyl = context.active_object
+    z_cyl.name = "TRIDENT_Gizmo_Z"
+    ### Cone Z-axis
+    bpy.ops.mesh.primitive_cone_add(radius1=0.2, depth=0.5, location=(0, 0, 2))
+    z_con = context.active_object
+    z_con.name = "TRIDENT_Gizmo_Z_Cone"
+    ### Add text Z-Axis
+    bpy.ops.object.text_add(location=(0, 0, 2.5), rotation=(1.5708, 0, 0.78), radius=0.4)
+    z_text = context.active_object
+    z_text.name = "TRIDENT_Gizmo_Z_Text"
+    z_text.data.body = "Z"
+    z_text.data.align_x = 'CENTER'
+
+    # X-Axis
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.1, depth=2, location=(1, 0, 0), rotation=(0, 1.5708, 0))
+    x_cyl = context.active_object
+    x_cyl.name = "TRIDENT_Gizmo_X"
+    ### Cone X-axis
+    bpy.ops.mesh.primitive_cone_add(radius1=0.2, depth=0.5, location=(2, 0, 0), rotation=(0, 1.5708, 0))
+    x_con = context.active_object
+    x_con.name = "TRIDENT_Gizmo_X_Cone"
+    ### Add text X-Axis
+    bpy.ops.object.text_add(location=(2.3, 0, 0.3), rotation=(1.5708, 0, 0.78), radius=0.4)
+    x_text = context.active_object
+    x_text.name = "TRIDENT_Gizmo_X_Text"
+    x_text.data.body = "X"
+    x_text.data.align_x = 'CENTER'
+
+    # Y-Axis
+    bpy.ops.mesh.primitive_cylinder_add(radius=0.1, depth=2, location=(0, 1, 0), rotation=(0, 1.5708, 1.5708))
+    y_cyl = context.active_object
+    y_cyl.name = "TRIDENT_Gizmo_Y"
+    ### Cone Y-Axis
+    bpy.ops.mesh.primitive_cone_add(radius1=0.2, depth=0.5, location=(0, 2, 0), rotation=(0, 1.5708, 1.5708))
+    y_con = context.active_object
+    y_con.name = "TRIDENT_Gizmo_Y_Cone"
+    ### Add text Y-Axis
+    bpy.ops.object.text_add(location=(0, 2.3, 0.3), rotation=(1.5708, 0, 0.78), radius=0.4)
+    y_text = context.active_object
+    y_text.name = "TRIDENT_Gizmo_Y_Text"
+    y_text.data.body = "Y"
+    y_text.data.align_x = 'CENTER'
+
+    # Add sphere
+    bpy.ops.mesh.primitive_uv_sphere_add(radius=0.1, location=(0, 0, 0))
+    sphere = context.active_object
+    sphere.name = "TRIDENT_Gizmo_Sphere"
+
+    # Join all in one object
+    bpy.ops.object.select_all(action='DESELECT')
+    z_cyl.select_set(True)
+    x_cyl.select_set(True)
+    y_cyl.select_set(True)
+    z_con.select_set(True)
+    x_con.select_set(True)
+    y_con.select_set(True)
+    sphere.select_set(True)
+    bpy.context.view_layer.objects.active = sphere
+    bpy.ops.object.join()
+    gizmo = context.active_object
+    gizmo.name = "TRIDENT_Gizmo"
+
+    # Setup Constraints
+    gizmo.vertex_groups.new(name='z_group')
+    gizmo.vertex_groups['z_group'].add([578], weight=1.0, type='REPLACE')
+    gizmo.vertex_groups.new(name='y_group')
+    gizmo.vertex_groups['y_group'].add([772], weight=1.0, type='REPLACE')
+    gizmo.vertex_groups.new(name='x_group')
+    gizmo.vertex_groups['x_group'].add([675], weight=1.0, type='REPLACE')
+
+    # Z_TEXT
+    z_text.constraints.new(type='COPY_LOCATION')
+    z_text.constraints['Copy Location'].target = bpy.data.objects["TRIDENT_Gizmo"]
+    z_text.constraints['Copy Location'].subtarget = 'z_group'
+    z_text.constraints.new(type='LOCKED_TRACK')
+    z_text.constraints['Locked Track'].target = bpy.data.objects["Camera"]
+    z_text.constraints['Locked Track'].track_axis = 'TRACK_Z'
+    z_text.constraints['Locked Track'].lock_axis = 'LOCK_Y'
+    z_text.constraints.new(type='LOCKED_TRACK')
+    z_text.constraints['Locked Track.001'].target = bpy.data.objects["Camera"]
+    z_text.constraints['Locked Track.001'].track_axis = 'TRACK_Z'
+    z_text.constraints['Locked Track.001'].lock_axis = 'LOCK_X'
+
+    # Y_TEXT
+    y_text.constraints.new(type='COPY_LOCATION')
+    y_text.constraints['Copy Location'].target = bpy.data.objects["TRIDENT_Gizmo"]
+    y_text.constraints['Copy Location'].subtarget = 'y_group'
+    y_text.constraints.new(type='LOCKED_TRACK')
+    y_text.constraints['Locked Track'].target = bpy.data.objects["Camera"]
+    y_text.constraints['Locked Track'].track_axis = 'TRACK_Z'
+    y_text.constraints['Locked Track'].lock_axis = 'LOCK_Y'
+    y_text.constraints.new(type='LOCKED_TRACK')
+    y_text.constraints['Locked Track.001'].target = bpy.data.objects["Camera"]
+    y_text.constraints['Locked Track.001'].track_axis = 'TRACK_Z'
+    y_text.constraints['Locked Track.001'].lock_axis = 'LOCK_X'
+
+    # X_TEXT
+    x_text.constraints.new(type='COPY_LOCATION')
+    x_text.constraints['Copy Location'].target = bpy.data.objects["TRIDENT_Gizmo"]
+    x_text.constraints['Copy Location'].subtarget = 'x_group'
+    x_text.constraints.new(type='LOCKED_TRACK')
+    x_text.constraints['Locked Track'].target = bpy.data.objects["Camera"]
+    x_text.constraints['Locked Track'].track_axis = 'TRACK_Z'
+    x_text.constraints['Locked Track'].lock_axis = 'LOCK_Y'
+    x_text.constraints.new(type='LOCKED_TRACK')
+    x_text.constraints['Locked Track.001'].target = bpy.data.objects["Camera"]
+    x_text.constraints['Locked Track.001'].track_axis = 'TRACK_Z'
+    x_text.constraints['Locked Track.001'].lock_axis = 'LOCK_X'
+
+    # Constraint to the object
+    gizmo.constraints.new(type='COPY_ROTATION')
+    gizmo.constraints['Copy Rotation'].target = points_obj
+    gizmo.constraints['Copy Rotation'].mix_mode = 'BEFORE'
+
+    # Move gizmo
+    gizmo.location = (-14, 21.5, 11)
+    gizmo.scale = (0.5, 0.5, 0.5)
+    
+    # Hide all gizmo parts in viewport
+    gizmo.hide_viewport = True
+    x_text.hide_viewport = True
+    y_text.hide_viewport = True
+    z_text.hide_viewport = True
+
+    # Set material for the gizmo and for text
+    mat_gizmo = bpy.data.materials.new(name="TRIDENT_Gizmo_Material")
+    mat_gizmo.use_nodes = True
+    bsdf = mat_gizmo.node_tree.nodes['Principled BSDF']
+    bsdf.inputs['Base Color'].default_value = (0.03, 0.03, 0.03, 1)
+
+    mat_gizmo_text = bpy.data.materials.new(name="TRIDENT_Gizmo_Text_Material")
+    mat_gizmo_text.use_nodes = True
+    bsdf_text = mat_gizmo_text.node_tree.nodes['Principled BSDF']
+    bsdf_text.inputs['Base Color'].default_value = (0, 0, 0, 1)
+
+    if gizmo.data.materials:
+        gizmo.data.materials[0] = mat_gizmo
+    else:
+        gizmo.data.materials.append(mat_gizmo)
+
+    for obj in [x_text, y_text, z_text]:
+        if obj.data.materials:
+            obj.data.materials[0] = mat_gizmo_text
+        else:
+            obj.data.materials.append(mat_gizmo_text)
+
 def setup_scene_environment(context):
     scene = context.scene
     world = scene.world
@@ -197,3 +354,5 @@ def setup_scene_environment(context):
         scene.trident.plane_side = plane_side
         plane_side.scale[0] = 30
         plane_side.scale[1] = 30
+
+    create_gizmo(context)

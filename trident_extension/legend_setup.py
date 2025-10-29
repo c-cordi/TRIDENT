@@ -6,6 +6,7 @@ def create_square_legend(context):
     import numpy as np
     trident = context.scene.trident
     color_label = trident.current_color_label
+    bpy.data.objects["TRIDENT_Gizmo"].location = (-15, 20.5, 11)
     
     if not color_label:
         print("[TRIDENT] No color label selected.")
@@ -26,6 +27,7 @@ def create_square_legend(context):
 
 def create_rectangle_legend(context):
     """Create rectangle format legend scene with overlay compositing"""
+    bpy.data.objects["TRIDENT_Gizmo"].location = (-16.8, 19.5, 10.5)
     create_legend_scene(context, format_type="rectangle")
 
 def create_legend_scene(context, format_type="square"):
