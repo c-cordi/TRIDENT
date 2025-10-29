@@ -78,8 +78,7 @@ TRIDENT requires [Blender](https://www.blender.org/) version 4.2 or higher. All 
 Planned additions:
 
 - Metadata inspection by clicking individual clusters
-- Adjust point size and shape
-- Custom legend formatting with palette control
+- Custom legend formatting
 - Filtering and masking tools for focused analysis
 - Layout presets for multi-panel figure composition
 
