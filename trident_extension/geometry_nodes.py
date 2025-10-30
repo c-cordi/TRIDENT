@@ -308,6 +308,10 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
     n_vm_dsc1 = nodes.new(type='ShaderNodeVectorMath');            n_vm_dsc1.location = (-200,  -600)
     n_vm_dsc2 = nodes.new(type='ShaderNodeVectorMath');            n_vm_dsc2.location = (   0,  -600)
     
+    n_sep_xyz = nodes.new(type='ShaderNodeSeparateXYZ');           n_sep_xyz.location = (200,   -400)
+    n_max1    = nodes.new(type='ShaderNodeMath');                  n_max1.location    = (400,   -600)
+    n_max2    = nodes.new(type='ShaderNodeMath');                  n_max2.location    = (600,   -600)
+
     n_real    = nodes.new(type='GeometryNodeRealizeInstances');    n_real.location    = (1000,   200)
     n_trm     = nodes.new(type='GeometryNodeTransform');           n_trm.location     = (1200,   200)
 
@@ -332,11 +336,15 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
     n_vm_ssc.operation = 'SUBTRACT'
     n_abs_sc.operation = 'ABSOLUTE'
     n_vm_dsc1.operation = 'DIVIDE'
-    n_vm_dsc1.inputs[1].default_value = (25, 25, 25)
+    n_vm_dsc1.inputs[1].default_value = (20, 20, 20)
     n_vm_dsc2.operation = 'DIVIDE'
     n_vm_dsc2.inputs[0].default_value = (1.0, 1.0, 1.0)
 
     n_vm_dp3.operation = 'DIVIDE'
+
+    # Take maximum of X, Y, Z for uniform scaling
+    n_max1.operation = 'MAXIMUM'
+    n_max2.operation = 'MAXIMUM'
 
     # Configure Named Attribute node
     n_attr.inputs[0].default_value = context.scene.trident.labels[0].name if context.scene.trident.labels else "label"
@@ -376,8 +384,13 @@ def setup_geometry_nodes(points_obj, inst_obj, context, max_color=10):
     links.new(n_vm_ssc.outputs['Vector'], n_abs_sc.inputs[0])
     links.new(n_abs_sc.outputs['Vector'], n_vm_dsc1.inputs[0])
     links.new(n_vm_dsc1.outputs['Vector'], n_vm_dsc2.inputs[1])
-    links.new(n_vm_dsc2.outputs['Vector'], n_trm.inputs['Scale'])
-    links.new(n_vm_dsc2.outputs['Vector'], n_vm_dp3.inputs[1])
+    links.new(n_vm_dsc2.outputs['Vector'], n_sep_xyz.inputs['Vector'])
+    links.new(n_sep_xyz.outputs['X'], n_max1.inputs[0])
+    links.new(n_sep_xyz.outputs['Y'], n_max1.inputs[1])
+    links.new(n_max1.outputs['Value'], n_max2.inputs[0])
+    links.new(n_sep_xyz.outputs['Z'], n_max2.inputs[1])
+    links.new(n_max2.outputs['Value'], n_trm.inputs['Scale'])
+    links.new(n_max2.outputs['Value'], n_vm_dp3.inputs[1])
     links.new(n_vm_dp3.outputs['Vector'], n_iop.inputs['Scale'])
     links.new(n_trm.outputs["Geometry"], n_out.inputs["Geometry"])
 
